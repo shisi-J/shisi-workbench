@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="诗思">
+  <meta name="theme-color" content="#C77DFF">
+  <meta name="description" content="诗思 - 个人工作台，管理工作·学习·生活">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="apple-touch-fullscreen" content="yes">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+
+  <!-- 在应用加载前注销旧 Service Worker，避免缓存干扰 -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for (var i = 0; i < registrations.length; i++) {
+          registrations[i].unregister();
+        }
+      });
+    }
+  </script>
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="assets/icon-512.png">
+  <title>诗思 · 个人工作台</title>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 遮罩层（移动端侧边栏打开时） -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- 侧边栏 -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">📝</div>
+        <div class="sidebar-titles">
+          <div class="sidebar-name">诗思</div>
+          <div class="sidebar-sub">工作·学习·生活</div>
+        </div>
+        <button class="sidebar-close" id="sidebarClose" aria-label="关闭菜单">✕</button>
+      </div>
+      <nav class="sidebar-nav" id="sidebarNav">
+        <!-- 独立功能 -->
+        <div class="nav-section">
+          <a href="#/" class="nav-item" data-route="/">
+            <span class="nav-icon">🏠</span><span class="nav-label">首页概览</span>
+          </a>
+          <a href="#/todo" class="nav-item" data-route="/todo">
+            <span class="nav-icon">✅</span><span class="nav-label">日程待办</span>
+          </a>
+          <a href="#/podcast" class="nav-item" data-route="/podcast">
+            <span class="nav-icon">🎙️</span><span class="nav-label">每日播客</span>
+          </a>
+          <a href="#/insight" class="nav-item" data-route="/insight">
+            <span class="nav-icon">🧠</span><span class="nav-label">感悟输出</span>
+          </a>
+          <a href="#/inspiration" class="nav-item" data-route="/inspiration">
+            <span class="nav-icon">💡</span><span class="nav-label">灵感库</span>
+          </a>
+          <a href="#/energy" class="nav-item" data-route="/energy">
+            <span class="nav-icon">⚡</span><span class="nav-label">SS能量</span>
+          </a>
+        </div>
+
+        <!-- 学习组（可折叠） -->
+        <div class="nav-group" data-group="learn">
+          <button class="nav-group-header">
+            <span class="nav-icon">📚</span><span class="nav-label">学习组</span>
+            <span class="nav-arrow">▾</span>
+          </button>
+          <div class="nav-group-items">
+            <a href="#/learn/expression" class="nav-item sub" data-route="/learn/expression"><span class="nav-icon">📖</span><span class="nav-label">学习表达</span></a>
+            <a href="#/learn/ai" class="nav-item sub" data-route="/learn/ai"><span class="nav-icon">🤖</span><span class="nav-label">学习AI</span></a>
+            <a href="#/learn/english" class="nav-item sub" data-route="/learn/english"><span class="nav-icon">🔤</span><span class="nav-label">学习英语</span></a>
+            <a href="#/learn/media" class="nav-item sub" data-route="/learn/media"><span class="nav-icon">📱</span><span class="nav-label">学习新媒体</span></a>
+            <a href="#/learn/office" class="nav-item sub" data-route="/learn/office"><span class="nav-icon">💼</span><span class="nav-label">Office技巧</span></a>
+          </div>
+        </div>
+
+        <!-- 日常生活（可折叠） -->
+        <div class="nav-group" data-group="life">
+          <button class="nav-group-header">
+            <span class="nav-icon">🌱</span><span class="nav-label">日常生活</span>
+            <span class="nav-arrow">▾</span>
+          </button>
+          <div class="nav-group-items">
+            <a href="#/life/eat" class="nav-item sub" data-route="/life/eat"><span class="nav-icon">🍽️</span><span class="nav-label">吃 · 美食探店</span></a>
+            <a href="#/life/fitness" class="nav-item sub" data-route="/life/fitness"><span class="nav-icon">💪</span><span class="nav-label">健身 · 训练台账</span></a>
+            <a href="#/life/beauty" class="nav-item sub" data-route="/life/beauty"><span class="nav-icon">💄</span><span class="nav-label">美丽 · 美妆穿搭</span></a>
+            <a href="#/life/travel" class="nav-item sub" data-route="/life/travel"><span class="nav-icon">✈️</span><span class="nav-label">旅游 · 行程游记</span></a>
+            <a href="#/life/home" class="nav-item sub" data-route="/life/home"><span class="nav-icon">🏠</span><span class="nav-label">小屋 · 安家置业</span></a>
+            <a href="#/life/social" class="nav-item sub" data-route="/life/social"><span class="nav-icon">🤝</span><span class="nav-label">社交 · 人情往来</span></a>
+          </div>
+        </div>
+
+        <!-- 工作随笔记（可折叠） -->
+        <div class="nav-group" data-group="work">
+          <button class="nav-group-header">
+            <span class="nav-icon">💼</span><span class="nav-label">工作随笔记</span>
+            <span class="nav-arrow">▾</span>
+          </button>
+          <div class="nav-group-items">
+            <a href="#/work/project" class="nav-item sub" data-route="/work/project"><span class="nav-icon">📊</span><span class="nav-label">项目管理</span></a>
+            <a href="#/work/procurement" class="nav-item sub" data-route="/work/procurement"><span class="nav-icon">📦</span><span class="nav-label">采销管理</span></a>
+            <a href="#/work/finance" class="nav-item sub" data-route="/work/finance"><span class="nav-icon">💰</span><span class="nav-label">财务收付款</span></a>
+            <a href="#/work/hr" class="nav-item sub" data-route="/work/hr"><span class="nav-icon">👥</span><span class="nav-label">人资社保</span></a>
+            <a href="#/work/info" class="nav-item sub" data-route="/work/info"><span class="nav-icon">📋</span><span class="nav-label">信息台账</span></a>
+          </div>
+        </div>
+
+        <!-- 其他独立模块 -->
+        <div class="nav-section">
+          <a href="#/knowledge" class="nav-item" data-route="/knowledge">
+            <span class="nav-icon">📁</span><span class="nav-label">个人知识库</span>
+          </a>
+          <a href="#/workflow" class="nav-item" data-route="/workflow">
+            <span class="nav-icon">📋</span><span class="nav-label">工作流</span>
+          </a>
+          <a href="#/settings" class="nav-item" data-route="/settings">
+            <span class="nav-icon">⚙️</span><span class="nav-label">设置</span>
+          </a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main-content" id="mainContent">
+      <!-- 顶部工具栏 -->
+      <header class="topbar" id="topbar">
+        <button class="topbar-menu" id="menuToggle" aria-label="打开菜单">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="topbar-title" id="topbarTitle">诗思</div>
+        <div class="topbar-actions">
+          <button class="topbar-btn" id="searchBtn" aria-label="搜索">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+          <button class="topbar-btn" id="aiBtn" aria-label="AI对话">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          </button>
+          <button class="topbar-btn" id="themeBtn" aria-label="切换主题">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- 搜索浮层 -->
+      <div class="search-overlay" id="searchOverlay">
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="搜你想看的..." autocomplete="off">
+          <button id="searchClose" class="search-close">取消</button>
+        </div>
+        <div class="search-results" id="searchResults"></div>
+      </div>
+
+      <!-- AI对话浮层 -->
+      <div class="ai-panel" id="aiPanel">
+        <div class="ai-header">
+          <span class="ai-title">⚡ 快速记录</span>
+          <button id="aiClose" class="ai-close">✕</button>
+        </div>
+        <!-- Tab切换 -->
+        <div class="ai-tabs">
+          <div class="ai-tab active" data-aitab="chat">💬 AI对话</div>
+          <div class="ai-tab" data-aitab="collect">📥 收藏链接</div>
+        </div>
+        <!-- AI对话面板 -->
+        <div class="ai-tab-content active" id="aiChatContent">
+          <div class="ai-messages" id="aiMessages">
+            <div class="ai-msg bot">你好，我是诗思AI助手，有什么可以帮你的？</div>
+          </div>
+          <div class="ai-input-area">
+            <input type="text" id="aiInput" placeholder="输入消息..." autocomplete="off">
+            <button id="aiSend" class="ai-send">发送</button>
+          </div>
+        </div>
+        <!-- 收藏链接面板 -->
+        <div class="ai-tab-content" id="aiCollectContent" style="display:none;">
+          <div class="ai-collect-body">
+            <textarea class="ai-collect-input" id="collectInput" placeholder="粘贴抖音/小红书/B站分享口令或链接..." rows="3"></textarea>
+            <button class="btn btn-secondary btn-sm" id="collectPasteBtn" style="margin-top:6px;">📋 读取剪贴板</button>
+            <div id="collectParseResult" style="margin-top:8px;"></div>
+            <div id="collectActions" style="display:none; margin-top:8px;">
+              <button class="btn btn-primary btn-block" id="collectSaveBtn">📥 收藏到灵感库</button>
+            </div>
+            <div class="ai-collect-recent">
+              <div class="ai-collect-recent-header">📋 最近收藏</div>
+              <div id="collectRecentList" class="ai-collect-recent-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 页面内容（路由出口） -->
+      <div class="page-container" id="pageContainer">
+        <div class="loading-screen">
+          <div class="loading-spinner"></div>
+          <p>加载中...</p>
+        </div>
+      </div>
+      <!-- AI浮动按钮 -->
+      <button class="ai-fab" id="aiFab" aria-label="AI助手">🤖</button>
+    </main>
+  </div>
+
+  <!-- CDN 库 -->
+  <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.7/dist/dexie.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- 应用代码 -->
+  <script type="module" src="js/app.js?v=144"></script>
+</body>
+</html>

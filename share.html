@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>接收分享 - 诗思工作台</title>
+  <style>
+    body { margin:0; padding:40px 20px; font-family:-apple-system,system-ui,sans-serif; background:#F8F4FF; color:#333; }
+    .share-box { max-width:500px; margin:0 auto; background:#fff; border-radius:16px; padding:24px; box-shadow:0 2px 12px rgba(0,0,0,0.08); }
+    .share-title { font-size:18px; font-weight:600; margin-bottom:16px; }
+    .share-content { background:#f5f5f5; border-radius:8px; padding:12px; margin-bottom:16px; font-size:14px; word-break:break-all; }
+    .share-btn { display:block; width:100%; padding:12px; background:#C77DFF; color:#fff; border:none; border-radius:8px; font-size:16px; cursor:pointer; margin-bottom:8px; }
+    .share-btn.secondary { background:#f0f0f0; color:#333; }
+  </style>
+</head>
+<body>
+  <div class="share-box">
+    <div class="share-title">📥 接收到分享内容</div>
+    <div id="shareContent"></div>
+    <button class="share-btn" id="importBtn">导入到灵感库</button>
+    <button class="share-btn secondary" id="openApp">打开工作台</button>
+  </div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const title = params.get('title') || '';
+    const text = params.get('text') || '';
+    const url = params.get('url') || '';
+    const combinedUrl = url || (text.match(/https?:\/\/[^\s]+/) || [''])[0];
+    
+    document.getElementById('shareContent').innerHTML = 
+      (title ? `<div class="share-content"><strong>标题：</strong>${title}</div>` : '') +
+      (text ? `<div class="share-content"><strong>内容：</strong>${text}</div>` : '') +
+      (combinedUrl ? `<div class="share-content"><strong>链接：</strong>${combinedUrl}</div>` : '');
+    
+    document.getElementById('importBtn').addEventListener('click', () => {
+      const data = { title: title || '分享内容', text, url: combinedUrl };
+      sessionStorage.setItem('pendingShare', JSON.stringify(data));
+      location.href = './#/inspiration';
+    });
+    document.getElementById('openApp').addEventListener('click', () => {
+      location.href = './';
+    });
+  </script>
+</body>
+</html>

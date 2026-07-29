@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E0AAFF"/>
+      <stop offset="100%" stop-color="#C77DFF"/>
+    </linearGradient>
+    <linearGradient id="book" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#F3E8FF"/>
+    </linearGradient>
+  </defs>
+  <!-- 圆角背景 -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- 笔记本主体 -->
+  <rect x="136" y="120" width="240" height="280" rx="20" fill="url(#book)" stroke="#7B2CBF" stroke-width="3" opacity="0.95"/>
+  <!-- 笔记本装订线 -->
+  <rect x="136" y="120" width="28" height="280" rx="14" fill="#7B2CBF" opacity="0.15"/>
+  <circle cx="150" cy="175" r="5" fill="#7B2CBF" opacity="0.4"/>
+  <circle cx="150" cy="230" r="5" fill="#7B2CBF" opacity="0.4"/>
+  <circle cx="150" cy="285" r="5" fill="#7B2CBF" opacity="0.4"/>
+  <circle cx="150" cy="340" r="5" fill="#7B2CBF" opacity="0.4"/>
+  <!-- 书写线条 -->
+  <line x1="190" y1="185" x2="330" y2="185" stroke="#C77DFF" stroke-width="8" stroke-linecap="round" opacity="0.7"/>
+  <line x1="190" y1="225" x2="310" y2="225" stroke="#C77DFF" stroke-width="8" stroke-linecap="round" opacity="0.5"/>
+  <line x1="190" y1="265" x2="340" y2="265" stroke="#C77DFF" stroke-width="8" stroke-linecap="round" opacity="0.7"/>
+  <line x1="190" y1="305" x2="290" y2="305" stroke="#C77DFF" stroke-width="8" stroke-linecap="round" opacity="0.5"/>
+  <line x1="190" y1="345" x2="320" y2="345" stroke="#C77DFF" stroke-width="8" stroke-linecap="round" opacity="0.7"/>
+  <!-- 钢笔/书写工具 -->
+  <g transform="rotate(35, 360, 200)">
+    <rect x="354" y="140" width="12" height="120" rx="6" fill="#7B2CBF"/>
+    <polygon points="354,260 366,260 360,280" fill="#7B2CBF"/>
+    <rect x="354" y="140" width="12" height="20" rx="6" fill="#5A189A"/>
+  </g>
+  <!-- 小星星装饰 -->
+  <circle cx="380" cy="100" r="6" fill="#FFFFFF" opacity="0.6"/>
+  <circle cx="100" cy="380" r="5" fill="#FFFFFF" opacity="0.4"/>
+  <circle cx="400" cy="370" r="4" fill="#FFFFFF" opacity="0.5"/>
+</svg>
