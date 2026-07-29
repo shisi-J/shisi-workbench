@@ -403,14 +403,22 @@ function initThemeToggle() {
 // === Service Worker 注册 ===
 function registerSW() {
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', async () => {
-      // 先注销所有旧的 Service Worker，确保使用最新版本
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      for (const reg of registrations) {
-        await reg.unregister();
-      }
-      // 重新注册新的 Service Worker
-      navigator.serviceWorker.register('sw.js').catch(err => {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').then(registration => {
+        // 监听新 SW 激活，提示用户刷新
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
+                console.log('新版本已激活，刷新页面以加载最新内容');
+              }
+            });
+          }
+        });
+        // 每小时检查一次更新
+        setInterval(() => registration.update(), 3600000);
+      }).catch(err => {
         console.log('SW 注册失败（不影响使用）:', err);
       });
     });

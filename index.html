@@ -14,16 +14,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
 
-  <!-- 在应用加载前注销旧 Service Worker，避免缓存干扰 -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        for (var i = 0; i < registrations.length; i++) {
-          registrations[i].unregister();
-        }
-      });
-    }
-  </script>
+  <!-- Service Worker 由 app.js 统一管理 -->
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
   <link rel="apple-touch-icon" sizes="192x192" href="assets/icon-192.png">
