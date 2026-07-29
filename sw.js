@@ -3,7 +3,7 @@
  * 离线缓存策略：同源资源 network-first，确保刷新即见最新版本
  */
 
-const CACHE_VERSION = 'shisi-v1.6.0';
+const CACHE_VERSION = 'shisi-v1.6.1';
 const CACHE_STATIC = `${CACHE_VERSION}-static`;
 const CACHE_RUNTIME = `${CACHE_VERSION}-runtime`;
 
