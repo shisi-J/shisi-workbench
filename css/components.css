@@ -3801,17 +3801,17 @@ button.recording {
   }
 }
 
-/* AI浮动按钮 */
+/* AI浮动按钮 - 可拖拽 */
 .ai-fab {
   position: fixed;
-  bottom: 80px;
-  right: 20px;
-  width: 52px;
-  height: 52px;
+  left: 16px;
+  bottom: calc(80px + var(--safe-area-bottom));
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   background: var(--brand-gradient, linear-gradient(135deg, #C77DFF, #9D4EDD));
   color: white;
-  font-size: 24px;
+  font-size: 22px;
   border: none;
   box-shadow: 0 4px 16px rgba(199, 125, 255, 0.4);
   cursor: pointer;
@@ -3819,23 +3819,27 @@ button.recording {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: box-shadow 0.2s, opacity 0.2s;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  opacity: 0.55;
 }
 .ai-fab:hover {
-  transform: scale(1.1);
+  opacity: 1;
   box-shadow: 0 6px 20px rgba(199, 125, 255, 0.5);
 }
 .ai-fab:active {
-  transform: scale(0.95);
+  opacity: 1;
+  box-shadow: 0 2px 8px rgba(199, 125, 255, 0.3);
 }
-@media (max-width: 768px) {
-  .ai-fab {
-    bottom: 70px;
-    right: 16px;
-    width: 48px;
-    height: 48px;
-    font-size: 22px;
-  }
+.ai-fab.dragging {
+  opacity: 1;
+  transition: none;
+  box-shadow: 0 8px 24px rgba(199, 125, 255, 0.6);
+}
+.ai-fab.ai-fab--visible {
+  opacity: 1;
 }
 
 /* ========================================

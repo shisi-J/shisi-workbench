@@ -110,31 +110,31 @@
   background: var(--bg-inset);
 }
 
-/* 侧边栏导航 - 紧凑 */
+/* 侧边栏导航 - 紧凑统一 */
 .sidebar-nav {
   flex: 1;
-  padding: var(--space-1) var(--space-1);
+  padding: var(--space-1);
   overflow-y: auto;
 }
 
 .nav-section {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  margin-bottom: var(--space-1);
+  gap: 0;
+  margin-bottom: var(--space-2);
 }
 
-/* 导航项 - 精细小巧（一级菜单贴左无缩进） */
+/* 导航项 - 统一高度，选中态用左侧色条而非背景填充 */
 .nav-item {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 6px 0;
+  padding: 7px var(--space-1);
   border-radius: var(--radius-xs);
   color: var(--text-secondary);
   font-size: var(--font-sm);
   transition: all var(--transition-fast);
-  min-height: 32px;
+  min-height: 34px;
   position: relative;
   text-decoration: none;
 }
@@ -144,19 +144,18 @@
 }
 
 .nav-item.active {
-  background: var(--brand-gradient-soft);
   color: var(--text-brand);
-  font-weight: var(--weight-medium);
+  font-weight: var(--weight-semibold);
 }
 
 .nav-item.active::before {
   content: '';
   position: absolute;
-  left: -2px;
+  left: 0;
   top: 50%;
   transform: translateY(-50%);
-  width: 2.5px;
-  height: 16px;
+  width: 3px;
+  height: 20px;
   background: var(--brand);
   border-radius: var(--radius-full);
 }
@@ -164,7 +163,7 @@
 .nav-item.sub {
   padding-left: 24px;
   font-size: var(--font-xs);
-  min-height: 28px;
+  min-height: 30px;
   color: var(--text-tertiary);
 }
 
@@ -188,22 +187,22 @@
   line-height: 1;
 }
 
-/* 可折叠分组 - 紧凑 */
+/* 可折叠分组 - 统一间距 */
 .nav-group {
-  margin-bottom: 1px;
+  margin-bottom: var(--space-1);
 }
 
 .nav-group-header {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 6px 0;
+  padding: 7px var(--space-1);
   border-radius: var(--radius-xs);
   color: var(--text-secondary);
   font-size: var(--font-sm);
   font-weight: var(--weight-medium);
   width: 100%;
-  min-height: 32px;
+  min-height: 34px;
   transition: all var(--transition-fast);
   /* 按钮重置 - 确保与一级菜单对齐 */
   appearance: none;
@@ -239,7 +238,7 @@
 .nav-group-items {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 0;
   max-height: 500px;
   opacity: 1;
   overflow: hidden;
@@ -259,7 +258,7 @@
 
 /* === 顶部工具栏 === */
 .topbar {
-  height: var(--topbar-height);
+  height: calc(var(--topbar-height) + var(--safe-area-top));
   background: var(--bg-card);
   border-bottom: 1px solid var(--border-light);
   display: flex;
@@ -675,7 +674,7 @@
   }
 
   .topbar {
-    height: 48px;
+    height: calc(48px + var(--safe-area-top));
   }
 
   .topbar-title {
@@ -687,8 +686,9 @@
     max-width: 320px;
   }
 
-  .nav-item {
-    min-height: 44px;
+  .nav-item,
+  .nav-group-header {
+    min-height: 40px;
   }
 
   .search-result-item {

@@ -147,8 +147,105 @@ function initAI() {
   }
 
   aiBtn?.addEventListener('click', toggleAI);
-  document.getElementById('aiFab')?.addEventListener('click', toggleAI);
   aiClose?.addEventListener('click', toggleAI);
+
+  // === AI 浮动按钮：可拖拽 + 点击打开 ===
+  const aiFab = document.getElementById('aiFab');
+  if (aiFab) {
+    // 恢复上次位置
+    const savedPos = localStorage.getItem('shisi-ai-fab-pos');
+    if (savedPos) {
+      try {
+        const pos = JSON.parse(savedPos);
+        aiFab.style.left = pos.x + 'px';
+        aiFab.style.top = pos.y + 'px';
+        aiFab.style.bottom = 'auto';
+        aiFab.style.right = 'auto';
+      } catch (e) {}
+    }
+
+    let isDragging = false;
+    let startX = 0, startY = 0;
+    let fabX = 0, fabY = 0;
+    let hasMoved = false;
+    const MOVE_THRESHOLD = 6;
+
+    function onDragStart(clientX, clientY) {
+      const rect = aiFab.getBoundingClientRect();
+      fabX = rect.left;
+      fabY = rect.top;
+      startX = clientX;
+      startY = clientY;
+      hasMoved = false;
+      isDragging = true;
+    }
+
+    function onDragMove(clientX, clientY) {
+      if (!isDragging) return;
+      const dx = clientX - startX;
+      const dy = clientY - startY;
+      if (Math.abs(dx) > MOVE_THRESHOLD || Math.abs(dy) > MOVE_THRESHOLD) {
+        if (!hasMoved) {
+          hasMoved = true;
+          aiFab.classList.add('dragging');
+        }
+        let newX = fabX + dx;
+        let newY = fabY + dy;
+        // 边界约束
+        const fabW = aiFab.offsetWidth;
+        const fabH = aiFab.offsetHeight;
+        newX = Math.max(4, Math.min(window.innerWidth - fabW - 4, newX));
+        newY = Math.max(4, Math.min(window.innerHeight - fabH - 4, newY));
+        aiFab.style.left = newX + 'px';
+        aiFab.style.top = newY + 'px';
+        aiFab.style.bottom = 'auto';
+        aiFab.style.right = 'auto';
+      }
+    }
+
+    function onDragEnd() {
+      if (!isDragging) return;
+      isDragging = false;
+      aiFab.classList.remove('dragging');
+      if (hasMoved) {
+        // 保存位置
+        const rect = aiFab.getBoundingClientRect();
+        localStorage.setItem('shisi-ai-fab-pos', JSON.stringify({
+          x: Math.round(rect.left),
+          y: Math.round(rect.top)
+        }));
+      } else {
+        // 未移动 → 视为点击
+        toggleAI();
+      }
+    }
+
+    // 触摸事件
+    aiFab.addEventListener('touchstart', (e) => {
+      const t = e.touches[0];
+      onDragStart(t.clientX, t.clientY);
+    }, { passive: true });
+
+    aiFab.addEventListener('touchmove', (e) => {
+      if (isDragging && hasMoved) e.preventDefault();
+      const t = e.touches[0];
+      onDragMove(t.clientX, t.clientY);
+    }, { passive: false });
+
+    aiFab.addEventListener('touchend', onDragEnd);
+
+    // 鼠标事件
+    aiFab.addEventListener('mousedown', (e) => {
+      onDragStart(e.clientX, e.clientY);
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      onDragMove(e.clientX, e.clientY);
+    });
+
+    document.addEventListener('mouseup', onDragEnd);
+  }
 
   // === Tab 切换 ===
   document.querySelectorAll('.ai-tab').forEach(tab => {
