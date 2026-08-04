@@ -428,11 +428,6 @@
   line-height: 1;
 }
 
-/* 中间首页按钮突出 */
-.bottom-nav-home .bottom-nav-icon {
-  font-size: 24px;
-}
-
 /* === 搜索浮层 === */
 .search-overlay {
   position: fixed;
@@ -808,9 +803,5 @@
 
   .bottom-nav-label {
     font-size: 9px;
-  }
-
-  .bottom-nav-home .bottom-nav-icon {
-    font-size: 22px;
   }
 }
