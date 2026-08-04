@@ -3,10 +3,10 @@
  * 负责初始化所有核心模块
  */
 
-import { initRouter } from './router.js?v=144';
-import { initTheme, toggleTheme } from './theme.js?v=144';
-import { initSeedData, getAll, add } from './db.js?v=144';
-import { parseShareText, isShareText, generateTagsFromParse } from './utils/shareParser.js?v=144';
+import { initRouter } from './router.js?v=145';
+import { initTheme, toggleTheme } from './theme.js?v=145';
+import { initSeedData, getAll, add } from './db.js?v=145';
+import { parseShareText, isShareText, generateTagsFromParse } from './utils/shareParser.js?v=145';
 
 // === Toast 工具 ===
 function showToast(message) {
@@ -19,12 +19,14 @@ function showToast(message) {
   setTimeout(() => toast.remove(), 2500);
 }
 
-// === 侧边栏控制 ===
+// === 侧边栏 & 顶栏控制 ===
 function initSidebar() {
   const sidebar = document.getElementById('sidebar');
   const overlay = document.getElementById('overlay');
   const menuToggle = document.getElementById('menuToggle');
   const sidebarClose = document.getElementById('sidebarClose');
+  const topbarHome = document.getElementById('topbarHome');
+  const settingsBtn = document.getElementById('settingsBtn');
 
   function openSidebar() {
     sidebar.classList.add('open');
@@ -40,12 +42,20 @@ function initSidebar() {
   sidebarClose?.addEventListener('click', closeSidebar);
   overlay?.addEventListener('click', closeSidebar);
 
-  // 可折叠分组
-  document.querySelectorAll('.nav-group-header').forEach(header => {
-    header.addEventListener('click', () => {
-      const group = header.closest('.nav-group');
-      group.classList.toggle('collapsed');
-    });
+  // 顶栏"诗思"点击回首页
+  topbarHome?.addEventListener('click', () => {
+    window.location.hash = '/';
+  });
+  topbarHome?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      window.location.hash = '/';
+    }
+  });
+
+  // 顶栏设置按钮
+  settingsBtn?.addEventListener('click', () => {
+    window.location.hash = '/settings';
   });
 }
 

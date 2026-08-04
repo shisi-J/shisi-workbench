@@ -106,6 +106,7 @@ async function renderPage(path) {
   if (titleEl) {
     titleEl.textContent = route.title || '诗思';
   }
+  document.title = (route.title || '诗思') + ' · 个人工作台';
 
   // 更新导航高亮
   updateNavActive(path);
@@ -172,16 +173,23 @@ async function renderPage(path) {
 
 // 更新导航激活状态
 function updateNavActive(path) {
+  // 侧边栏导航
   const navItems = document.querySelectorAll('.nav-item');
   navItems.forEach(item => {
     const route = item.getAttribute('data-route');
     if (route === path) {
       item.classList.add('active');
-      // 展开父分组
-      const group = item.closest('.nav-group');
-      if (group) {
-        group.classList.remove('collapsed');
-      }
+    } else {
+      item.classList.remove('active');
+    }
+  });
+
+  // 底部快捷导航栏
+  const bottomItems = document.querySelectorAll('.bottom-nav-item');
+  bottomItems.forEach(item => {
+    const route = item.getAttribute('data-route');
+    if (route === path) {
+      item.classList.add('active');
     } else {
       item.classList.remove('active');
     }
