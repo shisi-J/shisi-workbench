@@ -502,21 +502,30 @@ function registerSW() {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('sw.js').then(registration => {
-        // 监听新 SW 激活，提示用户刷新
+        // 检测到新版本时自动激活（skipWaiting）
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing;
           if (newWorker) {
             newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
-                console.log('新版本已激活，刷新页面以加载最新内容');
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // 新版本已下载，通知 SW 立即激活
+                newWorker.postMessage('SKIP_WAITING');
               }
             });
           }
         });
-        // 每小时检查一次更新
-        setInterval(() => registration.update(), 3600000);
+        // 每 30 分钟检查一次更新（降低频率避免频繁网络请求）
+        setInterval(() => registration.update(), 1800000);
       }).catch(err => {
         console.log('SW 注册失败（不影响使用）:', err);
+      });
+
+      // SW 控制权变化时静默刷新（用户无感知）
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
       });
     });
   }

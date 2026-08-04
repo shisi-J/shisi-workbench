@@ -1,9 +1,10 @@
 /**
  * 诗思工作台 - Service Worker
- * 离线缓存策略：同源资源 network-first，确保刷新即见最新版本
+ * 缓存优先策略：有缓存立即返回（秒开），后台静默更新
+ * 解决国内 GitHub Pages 访问慢导致白屏问题
  */
 
-const CACHE_VERSION = 'shisi-v1.6.1';
+const CACHE_VERSION = 'shisi-v1.7.0';
 const CACHE_STATIC = `${CACHE_VERSION}-static`;
 const CACHE_RUNTIME = `${CACHE_VERSION}-runtime`;
 
@@ -51,12 +52,14 @@ const CDN_HOSTS = [
   'cdn.jsdelivr.net',
 ];
 
+// 网络超时时间（毫秒）：超过此时间回退缓存
+const NETWORK_TIMEOUT = 3000;
+
 // === 安装：预缓存静态资源 ===
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_STATIC)
       .then((cache) => {
-        // 逐个缓存，避免单个失败导致全部失败
         return Promise.allSettled(
           STATIC_ASSETS.map((url) => cache.add(url))
         );
@@ -65,7 +68,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// === 激活：清理旧缓存 ===
+// === 激活：清理旧缓存 + 立即接管 ===
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
@@ -89,15 +92,15 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
-  // 跳过 chrome-extension 和其他特殊协议
+  // 跳过非 http 协议
   if (!url.protocol.startsWith('http')) return;
 
-  // AI API 请求：network-only，不缓存
+  // AI API 请求：直接放行，不拦截
   if (url.pathname.includes('/chat/completions')) {
     return;
   }
 
-  // 天气/地理 API：network-only，不缓存
+  // 天气/地理 API：直接放行
   if (url.hostname.includes('open-meteo.com') || url.hostname.includes('nominatim.openstreetmap.org')) {
     return;
   }
@@ -108,47 +111,91 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 同源资源：network-first（确保刷新即见最新版本）
+  // 同源资源：缓存优先 + 后台更新（核心策略）
   if (url.origin === self.location.origin) {
-    event.respondWith(networkFirst(request));
+    event.respondWith(cacheFirstWithUpdate(request));
     return;
   }
 
-  // 其他请求：network-first with cache fallback
-  event.respondWith(networkFirst(request));
+  // 其他跨域请求：stale-while-revalidate
+  event.respondWith(staleWhileRevalidate(request));
 });
 
 // === 缓存策略 ===
 
-// Cache-first：先查缓存，没有再请求网络
-async function cacheFirst(request) {
+/**
+ * 缓存优先 + 后台更新
+ * 有缓存立即返回（秒开），无缓存时带超时的网络请求
+ * 后台静默更新缓存，下次刷新生效新版本
+ */
+async function cacheFirstWithUpdate(request) {
   const cached = await caches.match(request);
-  if (cached) return cached;
 
+  if (cached) {
+    // 有缓存：立即返回，后台静默更新
+    fetchWithTimeout(request, NETWORK_TIMEOUT)
+      .then((response) => {
+        if (response && response.ok) {
+          const cache = caches.open(CACHE_RUNTIME);
+          cache.then(c => c.put(request, response.clone()));
+        }
+      })
+      .catch(() => {});
+    return cached;
+  }
+
+  // 无缓存（首次加载）：网络请求 + 超时保护
   try {
-    const response = await fetch(request);
-    if (response.ok) {
+    const response = await fetchWithTimeout(request, NETWORK_TIMEOUT);
+    if (response && response.ok) {
       const cache = await caches.open(CACHE_RUNTIME);
       cache.put(request, response.clone());
     }
     return response;
   } catch (err) {
-    // 离线且无缓存：返回首页作为 fallback
+    // 网络失败且无缓存：导航请求返回预缓存的 index.html
     if (request.mode === 'navigate') {
-      return caches.match('./index.html');
+      const fallback = await caches.match('./index.html');
+      if (fallback) return fallback;
     }
     throw err;
   }
 }
 
-// Stale-while-revalidate：先返回缓存，同时更新
+/**
+ * 带超时的 fetch
+ * 超过 timeout 毫秒后中断请求
+ */
+function fetchWithTimeout(request, timeout) {
+  return new Promise((resolve, reject) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error('timeout'));
+    }, timeout);
+
+    fetch(request, { signal: controller.signal })
+      .then((response) => {
+        clearTimeout(timer);
+        resolve(response);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+}
+
+/**
+ * Stale-while-revalidate：先返回缓存，同时更新
+ */
 async function staleWhileRevalidate(request) {
   const cache = await caches.open(CACHE_RUNTIME);
   const cached = await cache.match(request);
 
-  const fetchPromise = fetch(request)
+  const fetchPromise = fetchWithTimeout(request, NETWORK_TIMEOUT)
     .then((response) => {
-      if (response.ok) {
+      if (response && response.ok) {
         cache.put(request, response.clone());
       }
       return response;
@@ -158,26 +205,7 @@ async function staleWhileRevalidate(request) {
   return cached || fetchPromise;
 }
 
-// Network-first：先请求网络，失败再用缓存
-async function networkFirst(request) {
-  try {
-    const response = await fetch(request);
-    if (response.ok) {
-      const cache = await caches.open(CACHE_RUNTIME);
-      cache.put(request, response.clone());
-    }
-    return response;
-  } catch (err) {
-    const cached = await caches.match(request);
-    if (cached) return cached;
-    if (request.mode === 'navigate') {
-      return caches.match('./index.html');
-    }
-    throw err;
-  }
-}
-
-// === 消息通信：手动更新缓存 ===
+// === 消息通信 ===
 self.addEventListener('message', (event) => {
   if (event.data === 'SKIP_WAITING') {
     self.skipWaiting();
