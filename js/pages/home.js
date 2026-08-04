@@ -363,7 +363,20 @@ export default class HomePage {
   }
 
   async fetchWeather() {
-    // 策略1：浏览器 Geolocation 定位
+    // 1. 先读本地缓存（30 分钟内有效）
+    try {
+      const cached = localStorage.getItem('shisi-weather-cache');
+      if (cached) {
+        const data = JSON.parse(cached);
+        const age = Date.now() - (data.ts || 0);
+        if (age < 1800000) {
+          this.weather = data.weather;
+          return;
+        }
+      }
+    } catch (e) {}
+
+    // 2. 策略1：浏览器 Geolocation 定位（5 秒超时）
     try {
       const pos = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -373,40 +386,89 @@ export default class HomePage {
       });
       const { latitude, longitude } = pos.coords;
       await this._fetchWeatherByCoords(latitude, longitude);
-      if (this.weather) return;
+      if (this.weather) { this._cacheWeather(); return; }
     } catch (e) {}
 
-    // 策略2：IP 粗略定位
+    // 3. 策略2：IP 粗略定位（国内可用，3 秒超时）
     try {
-      const ipLocRes = await fetch('https://ipapi.co/json/');
-      if (ipLocRes.ok) {
-        const ipLoc = await ipLocRes.json();
+      const ipRes = await this._fetchWithTimeout('https://ip.useragentinfo.com/json', 3000);
+      if (ipRes && ipRes.ok) {
+        const ipLoc = await ipRes.json();
         if (ipLoc.latitude && ipLoc.longitude) {
-          await this._fetchWeatherByCoords(ipLoc.latitude, ipLoc.longitude, ipLoc.city || '');
-          if (this.weather) return;
+          await this._fetchWeatherByCoords(ipLoc.latitude, ipLoc.longitude, ipLoc.city || ipLoc.province || '');
+          if (this.weather) { this._cacheWeather(); return; }
         }
       }
     } catch (e) {}
 
-    // 策略3：默认上海
+    // 4. 策略3：ip-api.com 备用（国内可用，3 秒超时）
+    try {
+      const ipRes2 = await this._fetchWithTimeout('http://ip-api.com/json/?lang=zh&fields=status,lat,lon,city', 3000);
+      if (ipRes2 && ipRes2.ok) {
+        const ipLoc2 = await ipRes2.json();
+        if (ipLoc2.status === 'success' && ipLoc2.lat && ipLoc2.lon) {
+          await this._fetchWeatherByCoords(ipLoc2.lat, ipLoc2.lon, ipLoc2.city || '');
+          if (this.weather) { this._cacheWeather(); return; }
+        }
+      }
+    } catch (e) {}
+
+    // 5. 策略4：默认上海
     try {
       await this._fetchWeatherByCoords(31.23, 121.47, '上海');
+      if (this.weather) { this._cacheWeather(); }
+    } catch (e) {}
+  }
+
+  // 带超时的 fetch
+  async _fetchWithTimeout(url, timeout) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeout);
+    try {
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timer);
+      return res;
+    } catch (e) {
+      clearTimeout(timer);
+      throw e;
+    }
+  }
+
+  // 缓存天气到 localStorage
+  _cacheWeather() {
+    if (!this.weather) return;
+    try {
+      localStorage.setItem('shisi-weather-cache', JSON.stringify({
+        weather: this.weather,
+        ts: Date.now(),
+      }));
     } catch (e) {}
   }
 
   async _fetchWeatherByCoords(latitude, longitude, cityOverride = '') {
-    const [weatherRes, geoRes] = await Promise.allSettled([
-      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code,relative_humidity_2m,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Asia/Shanghai&forecast_days=1`),
-      cityOverride ? Promise.resolve(null) : fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=zh&zoom=10`),
-    ]);
+    // 天气 API：open-meteo（国内可访问，5 秒超时）
+    const weatherRes = await this._fetchWithTimeout(
+      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code,relative_humidity_2m,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Asia/Shanghai&forecast_days=1`,
+      5000
+    );
 
-    let weatherData = null, cityName = cityOverride;
-    if (weatherRes.status === 'fulfilled' && weatherRes.value.ok) {
-      weatherData = await weatherRes.value.json();
-    }
-    if (!cityOverride && geoRes.status === 'fulfilled' && geoRes.value && geoRes.value.ok) {
-      const geoData = await geoRes.value.json();
-      cityName = geoData?.address?.city || geoData?.address?.town || geoData?.address?.county || geoData?.address?.state || '';
+    if (!weatherRes || !weatherRes.ok) return;
+
+    const weatherData = await weatherRes.json();
+
+    // 城市名：优先用传入的，否则反向地理编码（3 秒超时）
+    let cityName = cityOverride;
+    if (!cityOverride) {
+      try {
+        const geoRes = await this._fetchWithTimeout(
+          `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=zh&zoom=10`,
+          3000
+        );
+        if (geoRes && geoRes.ok) {
+          const geoData = await geoRes.json();
+          cityName = geoData?.address?.city || geoData?.address?.town || geoData?.address?.county || geoData?.address?.state || '';
+        }
+      } catch (e) {}
     }
 
     if (weatherData && weatherData.current) {
