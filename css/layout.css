@@ -283,7 +283,7 @@
   border-bottom: 1px solid var(--border-light);
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  justify-content: space-between;
   padding: 0 var(--space-3);
   padding-top: var(--safe-area-top);
   position: sticky;
@@ -307,10 +307,11 @@
   background: var(--bg-inset);
 }
 
-/* 顶栏居中标题（点击回首页） */
+/* 顶栏居中标题（绝对定位，视觉正中间，点击回首页） */
 .topbar-title-center {
-  flex: 1;
-  text-align: center;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   font-size: var(--font-lg);
   font-weight: var(--weight-bold);
   color: var(--text-brand);
@@ -319,6 +320,7 @@
   user-select: none;
   -webkit-user-select: none;
   transition: opacity var(--transition-fast);
+  white-space: nowrap;
 }
 
 .topbar-title-center:active {

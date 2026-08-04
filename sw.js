@@ -4,7 +4,7 @@
  * 解决国内 GitHub Pages 访问慢导致白屏问题
  */
 
-const CACHE_VERSION = 'shisi-v1.8.0';
+const CACHE_VERSION = 'shisi-v1.8.1';
 const CACHE_STATIC = `${CACHE_VERSION}-static`;
 const CACHE_RUNTIME = `${CACHE_VERSION}-runtime`;
 

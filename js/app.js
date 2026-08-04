@@ -3,10 +3,10 @@
  * 负责初始化所有核心模块
  */
 
-import { initRouter } from './router.js?v=145';
-import { initTheme, toggleTheme } from './theme.js?v=145';
-import { initSeedData, getAll, add } from './db.js?v=145';
-import { parseShareText, isShareText, generateTagsFromParse } from './utils/shareParser.js?v=145';
+import { initRouter } from './router.js?v=146';
+import { initTheme, toggleTheme } from './theme.js?v=146';
+import { initSeedData, getAll, add } from './db.js?v=146';
+import { parseShareText, isShareText, generateTagsFromParse } from './utils/shareParser.js?v=146';
 
 // === Toast 工具 ===
 function showToast(message) {
