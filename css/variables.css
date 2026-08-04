@@ -93,7 +93,7 @@
   --transition-slow: 0.4s ease;
 
   /* 布局尺寸 */
-  --sidebar-width: 140px;
+  --sidebar-width: 116px;
   --sidebar-width-collapsed: 0px;
   --topbar-height: 52px;
   --safe-area-top: env(safe-area-inset-top, 0px);

@@ -128,8 +128,8 @@
 .nav-section-title {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 4px 2px;
+  gap: 4px;
+  padding: 6px 6px 2px;
   color: var(--text-tertiary);
   font-size: 10px;
   font-weight: var(--weight-semibold);
@@ -148,8 +148,8 @@
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 4px;
+  gap: 4px;
+  padding: 4px 6px;
   border-radius: var(--radius-xs);
   color: var(--text-secondary);
   font-size: var(--font-sm);
@@ -181,7 +181,7 @@
 }
 
 .nav-item.sub {
-  padding-left: 20px;
+  padding-left: 14px;
   font-size: var(--font-xs);
   min-height: 26px;
   color: var(--text-tertiary);
@@ -780,8 +780,8 @@
   }
 
   .sidebar {
-    width: 62%;
-    max-width: 220px;
+    width: 52%;
+    max-width: 160px;
   }
 
   .nav-item,
