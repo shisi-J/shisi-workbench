@@ -342,7 +342,7 @@ export default class HomePage {
     const w = this.weather;
     if (!w) return '';
     const wm = WEATHER_MAP[w.code] || { icon: '🌤️', label: '多云' };
-    const cityText = w.city ? `${w.city} ` : '';
+    const cityText = w.city ? `📍 ${w.city} ` : '📍 ';
     return ` · ${cityText}${wm.icon} ${w.temp}° <span style="opacity:0.7">${w.low}°/${w.high}°</span>`;
   }
 
@@ -389,26 +389,38 @@ export default class HomePage {
       if (this.weather) { this._cacheWeather(); return; }
     } catch (e) {}
 
-    // 3. 策略2：IP 粗略定位（国内可用，3 秒超时）
+    // 3. 策略2：ip-api.com IP 定位（国内可用，返回经纬度+城市名，3 秒超时）
     try {
-      const ipRes = await this._fetchWithTimeout('https://ip.useragentinfo.com/json', 3000);
+      const ipRes = await this._fetchWithTimeout('http://ip-api.com/json/?lang=zh&fields=status,lat,lon,city,regionName', 3000);
       if (ipRes && ipRes.ok) {
         const ipLoc = await ipRes.json();
-        if (ipLoc.latitude && ipLoc.longitude) {
-          await this._fetchWeatherByCoords(ipLoc.latitude, ipLoc.longitude, ipLoc.city || ipLoc.province || '');
+        if (ipLoc.status === 'success' && ipLoc.lat && ipLoc.lon) {
+          const cityName = ipLoc.city || ipLoc.regionName || '';
+          await this._fetchWeatherByCoords(ipLoc.lat, ipLoc.lon, cityName);
           if (this.weather) { this._cacheWeather(); return; }
         }
       }
     } catch (e) {}
 
-    // 4. 策略3：ip-api.com 备用（国内可用，3 秒超时）
+    // 4. 策略3：useragentinfo 补充定位（仅城市名，用城市名查经纬度）
     try {
-      const ipRes2 = await this._fetchWithTimeout('http://ip-api.com/json/?lang=zh&fields=status,lat,lon,city', 3000);
+      const ipRes2 = await this._fetchWithTimeout('https://ip.useragentinfo.com/json', 3000);
       if (ipRes2 && ipRes2.ok) {
         const ipLoc2 = await ipRes2.json();
-        if (ipLoc2.status === 'success' && ipLoc2.lat && ipLoc2.lon) {
-          await this._fetchWeatherByCoords(ipLoc2.lat, ipLoc2.lon, ipLoc2.city || '');
-          if (this.weather) { this._cacheWeather(); return; }
+        const cityName = ipLoc2.city || ipLoc2.province || '';
+        // 有城市名但无坐标，用城市名做反向查询
+        if (cityName) {
+          const geoRes = await this._fetchWithTimeout(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityName)}&format=json&limit=1&accept-language=zh`,
+            3000
+          );
+          if (geoRes && geoRes.ok) {
+            const geoData = await geoRes.json();
+            if (geoData[0] && geoData[0].lat && geoData[0].lon) {
+              await this._fetchWeatherByCoords(parseFloat(geoData[0].lat), parseFloat(geoData[0].lon), cityName);
+              if (this.weather) { this._cacheWeather(); return; }
+            }
+          }
         }
       }
     } catch (e) {}
