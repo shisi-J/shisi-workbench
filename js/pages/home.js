@@ -399,14 +399,22 @@ export default class HomePage {
       let cityName = '';
       let lat = null, lon = null;
 
-      // 从 pconline 获取中文城市名
+      // 从 pconline 获取中文城市名（pconline 返回 GBK 编码，需手动解码）
       if (pconlineRes.status === 'fulfilled' && pconlineRes.value && pconlineRes.value.ok) {
-        const text = await pconlineRes.value.text();
-        const match = text.match(/\{[\s\S]*\}/);
-        if (match) {
-          const ipLoc = JSON.parse(match[0]);
-          cityName = (ipLoc.city || '').replace('市', '') || (ipLoc.pro || '').replace('省', '');
-        }
+        try {
+          const buf = await pconlineRes.value.arrayBuffer();
+          let text;
+          try {
+            text = new TextDecoder('gbk').decode(buf);
+          } catch (e) {
+            text = await pconlineRes.value.text();
+          }
+          const match = text.match(/\{[\s\S]*\}/);
+          if (match) {
+            const ipLoc = JSON.parse(match[0]);
+            cityName = (ipLoc.city || '').replace('市', '') || (ipLoc.pro || '').replace('省', '');
+          }
+        } catch (e) {}
       }
 
       // 从 ipinfo.io 获取经纬度
