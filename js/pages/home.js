@@ -375,26 +375,29 @@ export default class HomePage {
       }
     } catch (e) {}
 
-    // 2. 并行获取：GPS 坐标 + IP 城市名
+    // 2. 真并行：GPS + ipinfo.io + pconline 同时发起
     let lat = null, lon = null, cityName = '';
 
-    // 2a. GPS 坐标（5 秒超时，仅用于天气精度，不阻塞城市名获取）
-    try {
-      const pos = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          timeout: 5000,
-          maximumAge: 600000,
-        });
-      });
-      lat = pos.coords.latitude;
-      lon = pos.coords.longitude;
-    } catch (e) {}
+    // GPS 包装为不 reject 的 Promise（超时/拒绝都 resolve null）
+    const gpsPromise = new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+        () => resolve(null),
+        { timeout: 5000, maximumAge: 600000 }
+      );
+    });
 
-    // 2b. 并行请求 IP 定位（ipinfo.io + pconline）
-    const [ipinfoRes, pconlineRes] = await Promise.allSettled([
+    const [gpsRes, ipinfoRes, pconlineRes] = await Promise.allSettled([
+      gpsPromise,
       this._fetchWithTimeout('https://ipinfo.io/json', 4000),
       this._fetchWithTimeout('https://whois.pconline.com.cn/ipJson.jsp?json=true', 3000),
     ]);
+
+    // GPS 坐标
+    if (gpsRes.status === 'fulfilled' && gpsRes.value) {
+      lat = gpsRes.value.lat;
+      lon = gpsRes.value.lon;
+    }
 
     // pconline → 中文城市名（需 GBK 解码，iOS Safari 不支持则自动跳过）
     if (pconlineRes.status === 'fulfilled' && pconlineRes.value && pconlineRes.value.ok) {
