@@ -389,37 +389,75 @@ export default class HomePage {
       if (this.weather) { this._cacheWeather(); return; }
     } catch (e) {}
 
-    // 3. 策略2：ipinfo.io（HTTPS，返回城市名+经纬度，3 秒超时）
+    // 3. 策略2：pconline 中文城市名 + ipinfo.io 经纬度（并行请求）
     try {
-      const ipRes = await this._fetchWithTimeout('https://ipinfo.io/json', 3000);
-      if (ipRes && ipRes.ok) {
-        const ipLoc = await ipRes.json();
-        if (ipLoc.loc) {
-          const [lat, lon] = ipLoc.loc.split(',');
-          const cityName = ipLoc.city || ipLoc.region || ipLoc.country || '';
-          await this._fetchWeatherByCoords(parseFloat(lat), parseFloat(lon), cityName);
-          if (this.weather) { this._cacheWeather(); return; }
+      const [pconlineRes, ipinfoRes] = await Promise.allSettled([
+        this._fetchWithTimeout('https://whois.pconline.com.cn/ipJson.jsp?json=true', 3000),
+        this._fetchWithTimeout('https://ipinfo.io/json', 3000),
+      ]);
+
+      let cityName = '';
+      let lat = null, lon = null;
+
+      // 从 pconline 获取中文城市名
+      if (pconlineRes.status === 'fulfilled' && pconlineRes.value && pconlineRes.value.ok) {
+        const text = await pconlineRes.value.text();
+        const match = text.match(/\{[\s\S]*\}/);
+        if (match) {
+          const ipLoc = JSON.parse(match[0]);
+          cityName = (ipLoc.city || '').replace('市', '') || (ipLoc.pro || '').replace('省', '');
         }
+      }
+
+      // 从 ipinfo.io 获取经纬度
+      if (ipinfoRes.status === 'fulfilled' && ipinfoRes.value && ipinfoRes.value.ok) {
+        const ipLoc2 = await ipinfoRes.value.json();
+        if (ipLoc2.loc) {
+          const parts = ipLoc2.loc.split(',');
+          lat = parseFloat(parts[0]);
+          lon = parseFloat(parts[1]);
+          // 如果 pconline 没拿到城市名，用 ipinfo 的英文名
+          if (!cityName) {
+            cityName = ipLoc2.city || ipLoc2.region || '';
+          }
+        }
+      }
+
+      // 有经纬度就直接查天气
+      if (lat !== null && lon !== null) {
+        await this._fetchWeatherByCoords(lat, lon, cityName);
+        if (this.weather) { this._cacheWeather(); return; }
+      }
+
+      // 有城市名但没经纬度，用城市名查坐标
+      if (cityName && lat === null) {
+        await this._fetchWeatherByCityName(cityName);
+        if (this.weather) { this._cacheWeather(); return; }
       }
     } catch (e) {}
 
-    // 4. 策略3：ipapi.co（HTTPS，返回城市名+经纬度，3 秒超时）
-    try {
-      const ipRes2 = await this._fetchWithTimeout('https://ipapi.co/json/', 3000);
-      if (ipRes2 && ipRes2.ok) {
-        const ipLoc2 = await ipRes2.json();
-        if (ipLoc2.latitude && ipLoc2.longitude) {
-          const cityName = ipLoc2.city || ipLoc2.region || '';
-          await this._fetchWeatherByCoords(ipLoc2.latitude, ipLoc2.longitude, cityName);
-          if (this.weather) { this._cacheWeather(); return; }
-        }
-      }
-    } catch (e) {}
-
-    // 5. 策略4：默认上海
+    // 4. 策略3：默认上海
     try {
       await this._fetchWeatherByCoords(31.23, 121.47, '上海');
       if (this.weather) { this._cacheWeather(); }
+    } catch (e) {}
+  }
+
+  // 通过城市名查经纬度再获取天气
+  async _fetchWeatherByCityName(cityName) {
+    try {
+      const geoRes = await this._fetchWithTimeout(
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1&language=zh&format=json`,
+        3000
+      );
+      if (geoRes && geoRes.ok) {
+        const geoData = await geoRes.json();
+        if (geoData.results && geoData.results[0]) {
+          const r = geoData.results[0];
+          const name = r.name || cityName;
+          await this._fetchWeatherByCoords(r.latitude, r.longitude, name);
+        }
+      }
     } catch (e) {}
   }
 
