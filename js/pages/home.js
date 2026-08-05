@@ -363,20 +363,22 @@ export default class HomePage {
   }
 
   async fetchWeather() {
-    // 1. 先读本地缓存（30 分钟内有效）
+    // 1. 本地缓存（30 分钟内有效）
     try {
       const cached = localStorage.getItem('shisi-weather-cache');
       if (cached) {
         const data = JSON.parse(cached);
-        const age = Date.now() - (data.ts || 0);
-        if (age < 1800000) {
+        if (Date.now() - (data.ts || 0) < 1800000 && data.weather?.city) {
           this.weather = data.weather;
           return;
         }
       }
     } catch (e) {}
 
-    // 2. 策略1：浏览器 Geolocation 定位（5 秒超时）
+    // 2. 并行获取：GPS 坐标 + IP 城市名
+    let lat = null, lon = null, cityName = '';
+
+    // 2a. GPS 坐标（5 秒超时，仅用于天气精度，不阻塞城市名获取）
     try {
       const pos = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -384,89 +386,91 @@ export default class HomePage {
           maximumAge: 600000,
         });
       });
-      const { latitude, longitude } = pos.coords;
-      await this._fetchWeatherByCoords(latitude, longitude);
-      if (this.weather) { this._cacheWeather(); return; }
+      lat = pos.coords.latitude;
+      lon = pos.coords.longitude;
     } catch (e) {}
 
-    // 3. 策略2：pconline 中文城市名 + ipinfo.io 经纬度（并行请求）
-    try {
-      const [pconlineRes, ipinfoRes] = await Promise.allSettled([
-        this._fetchWithTimeout('https://whois.pconline.com.cn/ipJson.jsp?json=true', 3000),
-        this._fetchWithTimeout('https://ipinfo.io/json', 3000),
-      ]);
+    // 2b. 并行请求 IP 定位（ipinfo.io + pconline）
+    const [ipinfoRes, pconlineRes] = await Promise.allSettled([
+      this._fetchWithTimeout('https://ipinfo.io/json', 4000),
+      this._fetchWithTimeout('https://whois.pconline.com.cn/ipJson.jsp?json=true', 3000),
+    ]);
 
-      let cityName = '';
-      let lat = null, lon = null;
-
-      // 从 pconline 获取中文城市名（pconline 返回 GBK 编码，需手动解码）
-      if (pconlineRes.status === 'fulfilled' && pconlineRes.value && pconlineRes.value.ok) {
+    // pconline → 中文城市名（需 GBK 解码，iOS Safari 不支持则自动跳过）
+    if (pconlineRes.status === 'fulfilled' && pconlineRes.value && pconlineRes.value.ok) {
+      try {
+        const buf = await pconlineRes.value.arrayBuffer();
+        let text = '';
         try {
-          const buf = await pconlineRes.value.arrayBuffer();
-          let text;
-          try {
-            text = new TextDecoder('gbk').decode(buf);
-          } catch (e) {
-            text = await pconlineRes.value.text();
+          text = new TextDecoder('gbk').decode(buf);
+        } catch (e) {
+          // iOS 不支持 gbk 编码，跳过 pconline
+        }
+        if (text) {
+          const m = text.match(/\{[\s\S]*\}/);
+          if (m) {
+            const loc = JSON.parse(m[0]);
+            cityName = (loc.city || '').replace('市', '') || (loc.pro || '').replace('省', '');
           }
-          const match = text.match(/\{[\s\S]*\}/);
-          if (match) {
-            const ipLoc = JSON.parse(match[0]);
-            cityName = (ipLoc.city || '').replace('市', '') || (ipLoc.pro || '').replace('省', '');
-          }
-        } catch (e) {}
-      }
+        }
+      } catch (e) {}
+    }
 
-      // 从 ipinfo.io 获取经纬度
-      if (ipinfoRes.status === 'fulfilled' && ipinfoRes.value && ipinfoRes.value.ok) {
-        const ipLoc2 = await ipinfoRes.value.json();
-        if (ipLoc2.loc) {
-          const parts = ipLoc2.loc.split(',');
+    // ipinfo.io → 坐标（GPS 没拿到时用）+ 英文城市名
+    let enCity = '';
+    if (ipinfoRes.status === 'fulfilled' && ipinfoRes.value && ipinfoRes.value.ok) {
+      try {
+        const d = await ipinfoRes.value.json();
+        if (d.loc && lat === null) {
+          const parts = d.loc.split(',');
           lat = parseFloat(parts[0]);
           lon = parseFloat(parts[1]);
-          // 如果 pconline 没拿到城市名，用 ipinfo 的英文名
-          if (!cityName) {
-            cityName = ipLoc2.city || ipLoc2.region || '';
+        }
+        enCity = d.city || d.region || '';
+      } catch (e) {}
+    }
+
+    // 英文城市名 → 中文（通过 Open-Meteo 地理编码，全程 UTF-8，iOS 友好）
+    if (!cityName && enCity) {
+      try {
+        const r = await this._fetchWithTimeout(
+          `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(enCity)}&count=1&language=zh&format=json`,
+          3000
+        );
+        if (r && r.ok) {
+          const g = await r.json();
+          if (g.results && g.results[0]) {
+            cityName = g.results[0].name;
           }
         }
-      }
+      } catch (e) {}
+      if (!cityName) cityName = enCity; // 退回英文也比空白好
+    }
 
-      // 有经纬度就直接查天气
-      if (lat !== null && lon !== null) {
-        await this._fetchWeatherByCoords(lat, lon, cityName);
-        if (this.weather) { this._cacheWeather(); return; }
-      }
-
-      // 有城市名但没经纬度，用城市名查坐标
-      if (cityName && lat === null) {
-        await this._fetchWeatherByCityName(cityName);
-        if (this.weather) { this._cacheWeather(); return; }
-      }
-    } catch (e) {}
-
-    // 4. 策略3：默认上海
-    try {
-      await this._fetchWeatherByCoords(31.23, 121.47, '上海');
-      if (this.weather) { this._cacheWeather(); }
-    } catch (e) {}
-  }
-
-  // 通过城市名查经纬度再获取天气
-  async _fetchWeatherByCityName(cityName) {
-    try {
-      const geoRes = await this._fetchWithTimeout(
-        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1&language=zh&format=json`,
-        3000
-      );
-      if (geoRes && geoRes.ok) {
-        const geoData = await geoRes.json();
-        if (geoData.results && geoData.results[0]) {
-          const r = geoData.results[0];
-          const name = r.name || cityName;
-          await this._fetchWeatherByCoords(r.latitude, r.longitude, name);
+    // 有城市名但没坐标 → 通过城市名查坐标
+    if (lat === null && cityName) {
+      try {
+        const r = await this._fetchWithTimeout(
+          `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1&format=json`,
+          3000
+        );
+        if (r && r.ok) {
+          const g = await r.json();
+          if (g.results && g.results[0]) {
+            lat = g.results[0].latitude;
+            lon = g.results[0].longitude;
+          }
         }
-      }
-    } catch (e) {}
+      } catch (e) {}
+    }
+
+    // 兜底：上海
+    if (lat === null) { lat = 31.23; lon = 121.47; }
+    if (!cityName) cityName = '上海';
+
+    // 3. 获取天气
+    await this._fetchWeatherByCoords(lat, lon, cityName);
+    if (this.weather) this._cacheWeather();
   }
 
   // 带超时的 fetch
@@ -494,35 +498,17 @@ export default class HomePage {
     } catch (e) {}
   }
 
-  async _fetchWeatherByCoords(latitude, longitude, cityOverride = '') {
-    // 天气 API：open-meteo（国内可访问，5 秒超时）
+  async _fetchWeatherByCoords(latitude, longitude, cityName = '') {
     const weatherRes = await this._fetchWithTimeout(
       `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code,relative_humidity_2m,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Asia/Shanghai&forecast_days=1`,
       5000
     );
-
     if (!weatherRes || !weatherRes.ok) return;
 
-    const weatherData = await weatherRes.json();
-
-    // 城市名：优先用传入的，否则反向地理编码（3 秒超时）
-    let cityName = cityOverride;
-    if (!cityOverride) {
-      try {
-        const geoRes = await this._fetchWithTimeout(
-          `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=zh&zoom=10`,
-          3000
-        );
-        if (geoRes && geoRes.ok) {
-          const geoData = await geoRes.json();
-          cityName = geoData?.address?.city || geoData?.address?.town || geoData?.address?.county || geoData?.address?.state || '';
-        }
-      } catch (e) {}
-    }
-
-    if (weatherData && weatherData.current) {
-      const c = weatherData.current;
-      const d = weatherData.daily;
+    const data = await weatherRes.json();
+    if (data && data.current) {
+      const c = data.current;
+      const d = data.daily;
       this.weather = {
         temp: Math.round(c.temperature_2m),
         code: c.weather_code,
