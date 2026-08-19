@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#C77DFF">
+  <title>诗思 · Gist 备份测试工具</title>
+  <style>
+    :root {
+      --brand: #C77DFF;
+      --brand-light: #E0AAFF;
+      --brand-lighter: #F3E8FF;
+      --brand-deep: #7B2CBF;
+      --brand-gradient: linear-gradient(135deg, #E0AAFF, #C77DFF);
+      --accent: #FF8FAB;
+      --success: #4ECDC4;
+      --warning: #FFD166;
+      --danger: #EF476F;
+      --info: #4361EE;
+      --bg-page: #F8F4FF;
+      --bg-card: #FFFFFF;
+      --bg-card-hover: #FAF5FF;
+      --bg-inset: #F0E6FA;
+      --text-primary: #2D1B4E;
+      --text-secondary: #6B5B7B;
+      --text-tertiary: #9B8BAD;
+      --text-inverse: #FFFFFF;
+      --text-brand: #7B2CBF;
+      --border-light: #EBE0F5;
+      --border-default: #D9C7E8;
+      --shadow-sm: 0 1px 3px rgba(45, 27, 78, 0.06);
+      --shadow-md: 0 4px 12px rgba(45, 27, 78, 0.08);
+      --shadow-lg: 0 8px 24px rgba(45, 27, 78, 0.12);
+      --shadow-brand: 0 4px 16px rgba(199, 125, 255, 0.25);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-full: 999px;
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+      --font-mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme]) {
+        --brand-light: #9D4EDD;
+        --brand-lighter: #2D1B4E;
+        --brand-deep: #E0AAFF;
+        --brand-gradient: linear-gradient(135deg, #7B2CBF, #5A189A);
+        --bg-page: #0F0A1E;
+        --bg-card: #1A1530;
+        --bg-card-hover: #241B3D;
+        --bg-inset: #241B3D;
+        --text-primary: #F0EAFF;
+        --text-secondary: #B8A8D8;
+        --text-tertiary: #8B7B9E;
+        --text-inverse: #1A1530;
+        --text-brand: #C77DFF;
+        --border-light: #2D1B4E;
+        --border-default: #3D2F5E;
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+        --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-page);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.5;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: var(--brand-gradient);
+      color: var(--text-inverse);
+      padding: 24px 28px;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-brand);
+      margin-bottom: 20px;
+    }
+
+    .header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header p {
+      font-size: 13px;
+      opacity: 0.92;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      padding: 24px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border-light);
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .input-group {
+      flex: 1;
+      min-width: 240px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    input[type="password"], input[type="text"] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border-default);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-family: var(--font-mono);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(199, 125, 255, 0.15);
+    }
+
+    .btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+      font-family: var(--font-sans);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: var(--brand-gradient);
+      color: var(--text-inverse);
+      box-shadow: var(--shadow-brand);
+    }
+
+    .btn-secondary {
+      background: var(--bg-inset);
+      color: var(--text-brand);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .checkbox-row input { cursor: pointer; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-light);
+    }
+
+    .stat-card .num {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-brand);
+      line-height: 1.2;
+    }
+
+    .stat-card .num.danger { color: var(--danger); }
+    .stat-card .num.success { color: var(--success); }
+    .stat-card .num.warning { color: var(--warning); }
+
+    .stat-card .label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    .status-bar {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      padding: 8px 12px;
+      background: var(--bg-inset);
+      border-radius: var(--radius-sm);
+      margin-bottom: 16px;
+      font-family: var(--font-mono);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .gist-list { display: flex; flex-direction: column; gap: 12px; }
+
+    .gist-item {
+      border: 1.5px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      background: var(--bg-card);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .gist-item:hover {
+      border-color: var(--border-default);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .gist-item.is-backup {
+      border-color: var(--success);
+      background: linear-gradient(135deg, rgba(78, 205, 196, 0.06), var(--bg-card));
+    }
+
+    .gist-item.is-backup:hover {
+      box-shadow: 0 4px 12px rgba(78, 205, 196, 0.18);
+    }
+
+    .gist-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .gist-desc {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      word-break: break-word;
+    }
+
+    .gist-desc.muted { color: var(--text-tertiary); font-weight: 400; font-style: italic; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .badge-backup { background: rgba(78, 205, 196, 0.15); color: var(--success); }
+    .badge-normal { background: var(--bg-inset); color: var(--text-tertiary); }
+
+    .gist-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+    }
+
+    .gist-meta span { display: inline-flex; align-items: center; gap: 4px; }
+
+    .gist-id {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-brand);
+      background: var(--bg-inset);
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+    }
+
+    .gist-files {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .file-tag {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-inset);
+      color: var(--text-secondary);
+    }
+
+    .file-tag.is-backup {
+      background: rgba(78, 205, 196, 0.15);
+      color: var(--success);
+      font-weight: 600;
+    }
+
+    .gist-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-tertiary);
+      font-size: 14px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 30px;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      border: 2.5px solid var(--border-default);
+      border-top-color: var(--brand);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-box {
+      background: rgba(239, 71, 111, 0.08);
+      border: 1.5px solid rgba(239, 71, 111, 0.3);
+      color: var(--danger);
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      margin-bottom: 16px;
+      word-break: break-word;
+    }
+
+    .info-box {
+      background: var(--bg-inset);
+      border-left: 3px solid var(--brand);
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+      line-height: 1.7;
+    }
+
+    .info-box code {
+      font-family: var(--font-mono);
+      background: var(--bg-card);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: var(--text-brand);
+    }
+
+    .modal-mask {
+      position: fixed;
+      inset: 0;
+      background: rgba(45, 27, 78, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+
+    .modal-mask.show { display: flex; }
+
+    .modal {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      max-width: 720px;
+      width: 100%;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .modal-head {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-head h3 { font-size: 15px; font-weight: 600; }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--text-tertiary);
+      padding: 0 4px;
+      line-height: 1;
+    }
+
+    .modal-body {
+      padding: 16px 20px;
+      overflow: auto;
+      flex: 1;
+    }
+
+    .modal-body pre {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: var(--text-primary);
+      background: var(--bg-inset);
+      padding: 12px;
+      border-radius: var(--radius-sm);
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-tertiary);
+      padding: 16px 0;
+    }
+
+    @media (max-width: 600px) {
+      body { padding: 12px; }
+      .card { padding: 16px; }
+      .header { padding: 18px 20px; }
+      .header h1 { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>☁️ Gist 备份测试工具</h1>
+      <p>列出当前 GitHub Token 下的所有 Gist，查看诗思工作台的云端备份情况</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔑 填写 GitHub Token</div>
+      <div class="form-row">
+        <div class="input-group">
+          <label for="token">GitHub Personal Access Token（需要 gist 权限）</label>
+          <input type="password" id="token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
+        </div>
+      </div>
+      <label class="checkbox-row">
+        <input type="checkbox" id="remember" checked />
+        记住 Token（仅保存在本机 localStorage，不会上传）
+      </label>
+      <div class="form-row" style="margin-top: 16px;">
+        <button class="btn btn-primary" id="fetchBtn">🔍 查询所有 Gist</button>
+        <button class="btn btn-secondary" id="clearBtn">清空 Token</button>
+      </div>
+      <div class="info-box">
+        💡 Token 从哪里来？打开诗思工作台设置页可以看到已配置的 Token。由于 Token 存储在浏览器的 IndexedDB / localStorage 中，服务器端无法直接读取，所以需要在这里手动粘贴一次。<br>
+        本工具调用的是 GitHub 官方接口 <code>GET https://api.github.com/gists?per_page=100</code>，请求仅发送到 GitHub，不经过任何第三方服务器。
+      </div>
+    </div>
+
+    <div id="errorArea"></div>
+
+    <div id="statsArea"></div>
+
+    <div id="statusArea"></div>
+
+    <div id="listArea">
+      <div class="empty">请在上方填写 Token 后点击「查询所有 Gist」</div>
+    </div>
+
+    <div class="footer">诗思工作台 · Gist 备份测试工具 · 所有操作在浏览器本地完成</div>
+  </div>
+
+  <!-- 内容查看弹窗 -->
+  <div class="modal-mask" id="modalMask">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 id="modalTitle">备份内容</h3>
+        <button class="modal-close" id="modalClose" aria-label="关闭">×</button>
+      </div>
+      <div class="modal-body">
+        <pre id="modalBody"></pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const GIST_FILENAME = 'shisi-cloud-backup.json';
+    const STORAGE_KEY = 'shisi-gist-test-token';
+    const $ = (id) => document.getElementById(id);
+
+    // 初始化：恢复已保存的 Token
+    (function init() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) $('token').value = saved;
+    })();
+
+    async function fetchGists() {
+      const token = $('token').value.trim();
+      const errArea = $('errorArea');
+      const statsArea = $('statsArea');
+      const statusArea = $('statusArea');
+      const listArea = $('listArea');
+
+      errArea.innerHTML = '';
+      statsArea.innerHTML = '';
+      statusArea.innerHTML = '';
+
+      if (!token) {
+        errArea.innerHTML = '<div class="error-box">⚠️ 请先填写 GitHub Token</div>';
+        return;
+      }
+
+      // 记住 Token
+      if ($('remember').checked) {
+        localStorage.setItem(STORAGE_KEY, token);
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+
+      $('fetchBtn').disabled = true;
+      listArea.innerHTML = '<div class="loading"><span class="spinner"></span>正在调用 GitHub API...</div>';
+
+      try {
+        const res = await fetch('https://api.github.com/gists?per_page=100', {
+          headers: {
+            'Authorization': `token ${token}`,
+            'Accept': 'application/vnd.github.v3+json',
+          },
+        });
+
+        // 读取速率限制信息
+        const remaining = res.headers.get('X-RateLimit-Remaining');
+        const limit = res.headers.get('X-RateLimit-Limit');
+        const reset = res.headers.get('X-RateLimit-Reset');
+        let rateInfo = '';
+        if (remaining !== null && limit !== null) {
+          rateInfo = `API 限额：剩余 ${remaining} / ${limit} 次请求`;
+          if (reset) {
+            const resetDate = new Date(parseInt(reset, 10) * 1000);
+            rateInfo += `，重置时间 ${resetDate.toLocaleTimeString('zh-CN')}`;
+          }
+        }
+
+        if (res.status === 401) {
+          throw new Error('Token 无效或已过期（401 未授权），请检查 Token 是否正确');
+        }
+        if (res.status === 403) {
+          throw new Error(`请求被拒绝（403）：可能是达到 API 限额，或 Token 缺少 gist 权限。${rateInfo}`);
+        }
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || `请求失败 (HTTP ${res.status})`);
+        }
+
+        const gists = await res.json();
+
+        if (rateInfo) {
+          statusArea.innerHTML = `<div class="status-bar"><span>✅ 查询成功 · 共 ${gists.length} 个 Gist</span><span>${rateInfo}</span></div>`;
+        } else {
+          statusArea.innerHTML = `<div class="status-bar"><span>✅ 查询成功 · 共 ${gists.length} 个 Gist</span></div>`;
+        }
+
+        renderGists(gists, token);
+      } catch (e) {
+        listArea.innerHTML = '';
+        errArea.innerHTML = `<div class="error-box">❌ ${e.message}</div>`;
+      } finally {
+        $('fetchBtn').disabled = false;
+      }
+    }
+
+    function renderGists(gists, token) {
+      const listArea = $('listArea');
+      const statsArea = $('statsArea');
+
+      const backupGists = gists.filter((g) => g.files && g.files[GIST_FILENAME]);
+      const normalGists = gists.filter((g) => !(g.files && g.files[GIST_FILENAME]));
+
+      // 统计卡片
+      statsArea.innerHTML = `
+        <div class="stats">
+          <div class="stat-card">
+            <div class="num">${gists.length}</div>
+            <div class="label">Gist 总数</div>
+          </div>
+          <div class="stat-card">
+            <div class="num success">${backupGists.length}</div>
+            <div class="label">诗思备份 Gist</div>
+          </div>
+          <div class="stat-card">
+            <div class="num ${normalGists.length > 0 ? 'warning' : ''}">${normalGists.length}</div>
+            <div class="label">其他 Gist</div>
+          </div>
+          <div class="stat-card">
+            <div class="num danger" id="dupCount">${backupGists.length > 1 ? backupGists.length : 0}</div>
+            <div class="label">${backupGists.length > 1 ? '⚠️ 重复备份（应仅 1 个）' : '无重复备份'}</div>
+          </div>
+        </div>
+      `;
+
+      if (gists.length === 0) {
+        listArea.innerHTML = '<div class="empty">📭 该 Token 下没有任何 Gist</div>';
+        return;
+      }
+
+      // 备份 Gist 排前面，按更新时间倒序
+      const sorted = [...gists].sort((a, b) => {
+        const aBackup = a.files && a.files[GIST_FILENAME] ? 0 : 1;
+        const bBackup = b.files && b.files[GIST_FILENAME] ? 0 : 1;
+        if (aBackup !== bBackup) return aBackup - bBackup;
+        return new Date(b.updated_at) - new Date(a.updated_at);
+      });
+
+      listArea.innerHTML = `<div class="gist-list">${sorted.map((g) => renderGistItem(g, token)).join('')}</div>`;
+
+      // 绑定事件
+      listArea.querySelectorAll('[data-view]').forEach((btn) => {
+        btn.addEventListener('click', () => viewGistContent(btn.dataset.view, token));
+      });
+      listArea.querySelectorAll('[data-del]').forEach((btn) => {
+        btn.addEventListener('click', () => deleteGist(btn.dataset.del, btn.dataset.desc, token));
+      });
+    }
+
+    function renderGistItem(g, token) {
+      const isBackup = g.files && g.files[GIST_FILENAME];
+      const fileNames = Object.keys(g.files || {});
+      const updated = new Date(g.updated_at).toLocaleString('zh-CN');
+      const created = new Date(g.created_at).toLocaleString('zh-CN');
+      const desc = g.description && g.description.trim()
+        ? g.description
+        : '（无描述）';
+
+      const fileTags = fileNames.map((name) =>
+        `<span class="file-tag ${name === GIST_FILENAME ? 'is-backup' : ''}">${name}${name === GIST_FILENAME ? ' ✓' : ''}</span>`
+      ).join('');
+
+      const viewBtn = isBackup
+        ? `<button class="btn btn-secondary btn-sm" data-view="${g.id}">📄 查看备份内容</button>`
+        : '';
+      const delBtn = `<button class="btn btn-danger btn-sm" data-del="${g.id}" data-desc="${escapeHtml(desc)}">🗑 删除</button>`;
+
+      return `
+        <div class="gist-item ${isBackup ? 'is-backup' : ''}">
+          <div class="gist-head">
+            <div class="gist-desc ${desc === '（无描述）' ? 'muted' : ''}">${escapeHtml(desc)}</div>
+            <span class="badge ${isBackup ? 'badge-backup' : 'badge-normal'}">
+              ${isBackup ? '☁️ 诗思备份' : '普通 Gist'}
+            </span>
+          </div>
+          <div class="gist-meta">
+            <span>🆔 <span class="gist-id">${g.id}</span></span>
+            <span>🕐 更新于 ${updated}</span>
+            <span>📅 创建于 ${created}</span>
+            <span>📁 ${fileNames.length} 个文件</span>
+            ${g.public ? '<span style="color:var(--warning)">🌐 公开</span>' : '<span style="color:var(--success)">🔒 私有</span>'}
+          </div>
+          <div class="gist-files">${fileTags}</div>
+          <div class="gist-actions">
+            <a class="btn btn-secondary btn-sm" href="https://gist.github.com/${g.id}" target="_blank" rel="noopener">🔗 在 GitHub 打开</a>
+            ${viewBtn}
+            ${delBtn}
+          </div>
+        </div>
+      `;
+    }
+
+    async function viewGistContent(gistId, token) {
+      const modal = $('modalMask');
+      const body = $('modalBody');
+      const title = $('modalTitle');
+      title.textContent = '加载中...';
+      body.textContent = '';
+      modal.classList.add('show');
+
+      try {
+        const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+          headers: {
+            'Authorization': `token ${token}`,
+            'Accept': 'application/vnd.github.v3+json',
+          },
+        });
+        if (!res.ok) throw new Error(`获取失败 (HTTP ${res.status})`);
+        const data = await res.json();
+        const file = data.files && data.files[GIST_FILENAME];
+        if (!file) throw new Error('该 Gist 不包含备份文件');
+
+        title.textContent = `备份内容 · ${gistId}`;
+
+        let pretty = '';
+        // 备份内容可能是 JSON 字符串
+        try {
+          const parsed = JSON.parse(file.content);
+          pretty = JSON.stringify(parsed, null, 2);
+        } catch (e) {
+          pretty = file.content;
+        }
+        body.textContent = pretty;
+      } catch (e) {
+        title.textContent = '加载失败';
+        body.textContent = '❌ ' + e.message;
+      }
+    }
+
+    async function deleteGist(gistId, desc, token) {
+      const ok = confirm(`确认删除这个 Gist 吗？\n\n描述：${desc}\nID：${gistId}\n\n⚠️ 此操作不可恢复！`);
+      if (!ok) return;
+
+      try {
+        const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `token ${token}`,
+            'Accept': 'application/vnd.github.v3+json',
+          },
+        });
+        if (res.status === 204) {
+          alert('✅ 删除成功');
+          fetchGists();
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || `删除失败 (HTTP ${res.status})`);
+        }
+      } catch (e) {
+        alert('❌ ' + e.message);
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // 事件绑定
+    $('fetchBtn').addEventListener('click', fetchGists);
+    $('token').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') fetchGists();
+    });
+    $('clearBtn').addEventListener('click', () => {
+      $('token').value = '';
+      localStorage.removeItem(STORAGE_KEY);
+      $('errorArea').innerHTML = '';
+      $('statsArea').innerHTML = '';
+      $('statusArea').innerHTML = '';
+      $('listArea').innerHTML = '<div class="empty">已清空 Token</div>';
+    });
+    $('modalClose').addEventListener('click', () => $('modalMask').classList.remove('show'));
+    $('modalMask').addEventListener('click', (e) => {
+      if (e.target === $('modalMask')) $('modalMask').classList.remove('show');
+    });
+  </script>
+</body>
+</html>
