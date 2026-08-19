@@ -1578,16 +1578,23 @@ async function getGistId() {
   return localStorage.getItem('shisi-gist-id') || '';
 }
 
-// 云同步：上传加密数据到 GitHub Gist
+// 云同步：上传数据到 GitHub Gist（不加密，Gist 本身是私有的）
 async function cloudSync() {
   const token = await getGitHubToken();
   if (!token) throw new Error('请先在设置页配置 GitHub Token');
 
-  // 导出加密数据
-  const encrypted = await exportAll();
-  if (!encrypted) throw new Error('数据导出失败，请检查加密密钥是否正确');
-
-  const content = typeof encrypted === 'string' ? encrypted : JSON.stringify(encrypted);
+  // 导出原始数据（不加密，避免两端密钥不一致导致解密失败）
+  const tables = db.tables.map(t => t.name).filter(n => n !== '_backups');
+  const rawData = {};
+  for (const table of tables) {
+    rawData[table] = await db.table(table).toArray();
+  }
+  const content = JSON.stringify({
+    version: '2.0',
+    timestamp: new Date().toISOString(),
+    encrypted: false,
+    data: rawData,
+  });
 
   // Gist 文件内容不能超过 1MB
   if (content.length > 1000000) {
@@ -1704,10 +1711,16 @@ async function cloudRestore() {
 
   const backupData = JSON.parse(file.content);
 
-  // 尝试解密
-  const decrypted = importDecrypted(backupData);
-  if (!decrypted) {
-    throw new Error('解密失败：加密密钥不匹配。请在设置页配置与同步端相同的加密密钥');
+  // 兼容 v2.0（不加密）和 v1.0（加密）格式
+  let decrypted;
+  if (backupData.version === '2.0' && backupData.encrypted === false) {
+    decrypted = backupData.data;
+  } else {
+    // 旧版加密格式
+    decrypted = importDecrypted(backupData);
+    if (!decrypted) {
+      throw new Error('解密失败：加密密钥不匹配。请在设置页配置与同步端相同的加密密钥');
+    }
   }
 
   // 清空并恢复（跳过 _backups 表）

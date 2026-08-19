@@ -17,7 +17,7 @@ export default class SettingsPage {
     const aiUrl = localStorage.getItem('shisi-ai-url') || 'https://api.chatanywhere.tech/v1/chat/completions';
     const aiModel = localStorage.getItem('shisi-ai-model') || 'gpt-3.5-turbo';
     const encKey = getEncryptionKey();
-    const appVersion = '1.9.17';
+    const appVersion = '1.9.18';
 
     this.container.innerHTML = `
       <div class="settings-page">
