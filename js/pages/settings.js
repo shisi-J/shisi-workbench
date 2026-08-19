@@ -2,7 +2,7 @@
  * 设置页面
  */
 
-import { exportToFile, importFromFile, getSetting, setSetting } from '../db.js';
+import { exportToFile, importFromFile, listBackups, restoreBackup, getSetting, setSetting } from '../db.js';
 import { getStoredTheme, applyTheme, toggleTheme } from '../theme.js';
 import { setEncryptionKey, getEncryptionKey } from '../crypto.js';
 
@@ -106,6 +106,13 @@ export default class SettingsPage {
             <button class="btn btn-secondary btn-sm" id="importBtn">📥 导入</button>
             <input type="file" id="importFile" accept=".json" style="display: none;">
           </div>
+          <div class="setting-item" style="padding: 0; margin-bottom: var(--space-3);">
+            <div>
+              <div class="setting-label">自动备份恢复</div>
+              <div class="setting-value">系统每 5 秒自动备份最近 3 份数据快照</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="showBackupsBtn">🕐 查看备份</button>
+          </div>
         </div>
 
         <!-- 安全设置 -->
@@ -196,6 +203,55 @@ export default class SettingsPage {
       } catch (err) {
         window.showToast('导入失败: ' + err.message);
       }
+    });
+
+    // 自动备份恢复
+    document.getElementById('showBackupsBtn')?.addEventListener('click', async () => {
+      const backups = await listBackups();
+      if (backups.length === 0) {
+        window.showToast('暂无自动备份记录');
+        return;
+      }
+      const div = document.createElement('div');
+      div.className = 'modal-overlay active';
+      div.innerHTML = `
+        <div class="modal">
+          <div class="modal-header">
+            <div class="modal-title">🕐 自动备份记录</div>
+            <button class="modal-close" id="backupClose">✕</button>
+          </div>
+          <div style="padding: var(--space-3);">
+            <div style="font-size: var(--font-xs); color: var(--text-tertiary); margin-bottom: var(--space-2);">
+              恢复备份会覆盖当前数据，请谨慎操作
+            </div>
+            ${backups.map(b => `
+              <div class="setting-item" style="padding: var(--space-2) 0; border-bottom: 1px solid var(--border-light);">
+                <div>
+                  <div class="setting-label">备份 ${b.id}</div>
+                  <div class="setting-value">${b.date}</div>
+                </div>
+                <button class="btn btn-secondary btn-sm" data-restore="${b.id}">恢复</button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+      document.body.appendChild(div);
+      const close = () => div.remove();
+      document.getElementById('backupClose').addEventListener('click', close);
+      div.addEventListener('click', e => { if (e.target === div) close(); });
+      div.querySelectorAll('[data-restore]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = parseInt(btn.getAttribute('data-restore'));
+          try {
+            await restoreBackup(id);
+            window.showToast('✅ 已恢复备份');
+            setTimeout(() => location.reload(), 1000);
+          } catch (err) {
+            window.showToast('恢复失败: ' + err.message);
+          }
+        });
+      });
     });
 
     // 加密密钥

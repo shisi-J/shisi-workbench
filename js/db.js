@@ -54,9 +54,36 @@ db.version(DB_VERSION).stores({
   workflows: '++id, title, steps, category, createdAt, updatedAt',
   // 设置
   settings: 'key, value, updatedAt',
+  // 自动备份（内部使用，保存最近3份数据快照）
+  _backups: '++id, ts, tables',
 });
 
 // === 通用 CRUD 操作 ===
+
+// 防抖自动备份：写入操作后 5 秒自动备份
+let _backupTimer = null;
+async function _autoBackup() {
+  if (_backupTimer) clearTimeout(_backupTimer);
+  _backupTimer = setTimeout(async () => {
+    try {
+      const tables = {};
+      for (const t of db.tables) {
+        if (t.name === '_backups') continue;
+        tables[t.name] = await t.toArray();
+      }
+      await db.table('_backups').add({ ts: Date.now(), tables: JSON.stringify(tables) });
+      // 只保留最近 3 份备份
+      const all = await db.table('_backups').orderBy('id').reverse().toArray();
+      if (all.length > 3) {
+        const toDelete = all.slice(3).map(b => b.id);
+        await db.table('_backups').bulkDelete(toDelete);
+      }
+    } catch (e) {
+      console.log('自动备份失败:', e);
+    }
+    _backupTimer = null;
+  }, 5000);
+}
 
 // 添加记录
 async function add(table, data) {
@@ -66,7 +93,9 @@ async function add(table, data) {
     createdAt: now,
     updatedAt: now,
   };
-  return await db.table(table).add(record);
+  const result = await db.table(table).add(record);
+  _autoBackup();
+  return result;
 }
 
 // 批量添加
@@ -77,7 +106,9 @@ async function bulkAdd(table, dataArray) {
     createdAt: now,
     updatedAt: now,
   }));
-  return await db.table(table).bulkAdd(records);
+  const result = await db.table(table).bulkAdd(records);
+  _autoBackup();
+  return result;
 }
 
 // 更新记录
@@ -86,12 +117,16 @@ async function update(table, id, data) {
     ...data,
     updatedAt: new Date().toISOString(),
   };
-  return await db.table(table).update(id, updateData);
+  const result = await db.table(table).update(id, updateData);
+  _autoBackup();
+  return result;
 }
 
 // 删除记录
 async function remove(table, id) {
-  return await db.table(table).delete(id);
+  const result = await db.table(table).delete(id);
+  _autoBackup();
+  return result;
 }
 
 // 获取单条
@@ -194,6 +229,36 @@ async function importFromFile(file) {
   const text = await file.text();
   const data = JSON.parse(text);
   await importAll(data);
+  return true;
+}
+
+// 从自动备份恢复（返回最近的备份列表）
+async function listBackups() {
+  try {
+    const all = await db.table('_backups').orderBy('id').reverse().toArray();
+    return all.map(b => ({
+      id: b.id,
+      ts: b.ts,
+      date: new Date(b.ts).toLocaleString('zh-CN'),
+    }));
+  } catch (e) {
+    return [];
+  }
+}
+
+// 恢复指定备份
+async function restoreBackup(backupId) {
+  const backup = await db.table('_backups').get(backupId);
+  if (!backup || !backup.tables) throw new Error('备份不存在');
+  const data = JSON.parse(backup.tables);
+  for (const tableName of Object.keys(data)) {
+    if (db.table(tableName) && tableName !== '_backups') {
+      await db.table(tableName).clear();
+      if (data[tableName].length > 0) {
+        await db.table(tableName).bulkAdd(data[tableName]);
+      }
+    }
+  }
   return true;
 }
 
@@ -1499,6 +1564,8 @@ export {
   importAll,
   exportToFile,
   importFromFile,
+  listBackups,
+  restoreBackup,
   getSetting,
   setSetting,
   initSeedData,

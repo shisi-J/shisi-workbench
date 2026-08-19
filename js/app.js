@@ -509,44 +509,67 @@ function initThemeToggle() {
 
 // === Service Worker 注册 ===
 function registerSW() {
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').then(registration => {
-        // 检测到新版本时自动激活（skipWaiting）
-        registration.addEventListener('updatefound', () => {
-          const newWorker = registration.installing;
-          if (newWorker) {
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                // 新版本已下载，通知 SW 立即激活
-                newWorker.postMessage('SKIP_WAITING');
-              }
-            });
+  if (!('serviceWorker' in navigator)) return;
+
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then(registration => {
+      let pendingUpdate = false;
+
+      // 检测到新版本已下载
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing;
+        if (!newWorker) return;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            // 新版本已下载，但不要立即激活
+            // 标记为待更新，等用户空闲时再应用
+            pendingUpdate = true;
+            tryApplyUpdate();
           }
         });
-        // 每 30 分钟检查一次更新（降低频率避免频繁网络请求）
-        setInterval(() => registration.update(), 1800000);
-      }).catch(err => {
-        console.log('SW 注册失败（不影响使用）:', err);
       });
 
-      // SW 控制权变化：不强制 reload，避免用户正在填写表单时丢失数据
-      let refreshing = false;
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (refreshing) return;
-        refreshing = true;
-        // 检查是否有弹窗打开（用户正在编辑）
+      // 尝试应用更新：仅在用户没有正在编辑时执行
+      function tryApplyUpdate() {
+        if (!pendingUpdate) return;
         const hasModal = document.querySelector('.modal-overlay.active');
         if (hasModal) {
-          // 有弹窗打开：只提示，不刷新
-          window.showToast('📲 新版本已就绪，完成当前编辑后请手动刷新页面', 5000);
+          // 用户正在编辑，等待弹窗关闭后再试
+          window.showToast('📲 新版本已就绪，编辑完成后自动更新', 3000);
+          // 监听弹窗关闭
+          const observer = new MutationObserver(() => {
+            if (!document.querySelector('.modal-overlay.active')) {
+              observer.disconnect();
+              setTimeout(applyNow, 1000);
+            }
+          });
+          observer.observe(document.body, { childList: true, subtree: true });
         } else {
-          // 无弹窗：延迟刷新
-          setTimeout(() => window.location.reload(), 1500);
+          applyNow();
         }
-      });
+      }
+
+      function applyNow() {
+        if (!pendingUpdate) return;
+        pendingUpdate = false;
+        // 通知 SW 激活新版本
+        registration.waiting?.postMessage('SKIP_WAITING');
+      }
+
+      // 每 60 分钟检查一次更新
+      setInterval(() => registration.update(), 3600000);
+    }).catch(err => {
+      console.log('SW 注册失败（不影响使用）:', err);
     });
-  }
+
+    // SW 控制权变化：延迟刷新让新缓存就绪
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return;
+      refreshing = true;
+      setTimeout(() => window.location.reload(), 800);
+    });
+  });
 }
 
 // === 阻止双击缩放 ===
