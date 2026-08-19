@@ -383,7 +383,7 @@ export default class HomePage {
       navigator.geolocation.getCurrentPosition(
         (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
         () => resolve(null),
-        { timeout: 5000, maximumAge: 600000 }
+        { timeout: 8000, maximumAge: 300000, enableHighAccuracy: false }
       );
     });
 

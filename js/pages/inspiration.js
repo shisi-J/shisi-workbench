@@ -146,7 +146,12 @@ export default class InspirationPage {
   async render() {
     try {
       this.inspirations = await getAll('inspirations');
-      this.inspirations.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+      this.inspirations.sort((a, b) => {
+        const fa = a.favorite ? 1 : 0;
+        const fb = b.favorite ? 1 : 0;
+        if (fa !== fb) return fb - fa;
+        return (b.createdAt || '').localeCompare(a.createdAt || '');
+      });
     } catch (e) {
       this.inspirations = [];
     }
@@ -593,6 +598,7 @@ export default class InspirationPage {
     const platformConfig = PLATFORMS[data.platform] || PLATFORMS.webpage;
     const cover = data.cover || generatePlaceholderCover(data.platform, '');
     const isGradient = cover.startsWith('linear-gradient');
+    const isEdit = !!data.id;
 
     modal.innerHTML = `
       <div class="modal" style="max-height: 85vh; overflow-y: auto;">
@@ -661,11 +667,38 @@ export default class InspirationPage {
         </div>
 
         <div class="form-group">
-          <label class="form-label">
-            <input type="checkbox" id="inspFavorite" ${data.favorite ? 'checked' : ''} style="width: auto; margin-right: 4px;">
-            收藏置顶
+          <label class="form-label" style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: var(--space-2); background: var(--bg-inset); border-radius: var(--radius-xs);">
+            <input type="checkbox" id="inspFavorite" ${data.favorite ? 'checked' : ''} style="width: 18px; height: 18px; flex-shrink: 0; cursor: pointer; accent-color: var(--brand);">
+            <span style="font-size: var(--font-sm);">⭐ 收藏置顶</span>
           </label>
         </div>
+
+        <!-- 同步到其他模块 -->
+        ${!isEdit ? `
+        <div class="form-group">
+          <label class="form-label">同步到其他模块（选填）</label>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; padding: var(--space-2); background: var(--bg-inset); border-radius: var(--radius-xs);">
+            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 4px 6px;">
+              <input type="checkbox" class="sync-target" data-target="learn-ai" style="width: 14px; height: 14px; accent-color: var(--brand);"> 🤖 学习AI
+            </label>
+            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 4px 6px;">
+              <input type="checkbox" class="sync-target" data-target="learn-english" style="width: 14px; height: 14px; accent-color: var(--brand);"> 🔤 学习英语
+            </label>
+            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 4px 6px;">
+              <input type="checkbox" class="sync-target" data-target="learn-media" style="width: 14px; height: 14px; accent-color: var(--brand);"> 📱 新媒体
+            </label>
+            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 4px 6px;">
+              <input type="checkbox" class="sync-target" data-target="podcast" style="width: 14px; height: 14px; accent-color: var(--brand);"> 🎙️ 播客
+            </label>
+            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 4px 6px;">
+              <input type="checkbox" class="sync-target" data-target="insight" style="width: 14px; height: 14px; accent-color: var(--brand);"> 🧠 感悟输出
+            </label>
+            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 4px 6px;">
+              <input type="checkbox" class="sync-target" data-target="learn-expression" style="width: 14px; height: 14px; accent-color: var(--brand);"> 📖 学习表达
+            </label>
+          </div>
+        </div>
+        ` : ''}
 
         ${renderUploadField(data.attachments || [])}
         <button class="btn btn-primary btn-block" id="saveInsp">保存灵感</button>
@@ -767,9 +800,55 @@ export default class InspirationPage {
       };
 
       await add('inspirations', record);
+
+      // 同步到其他选中模块
+      const syncTargets = modal.querySelectorAll('.sync-target:checked');
+      for (const cb of syncTargets) {
+        const target = cb.getAttribute('data-target');
+        try {
+          if (target.startsWith('learn-')) {
+            const cat = target.replace('learn-', '');
+            await add('learnings', {
+              url: url,
+              title: title || '未命名灵感',
+              platform: platform,
+              cover: coverInput || generatePlaceholderCover(platform, ''),
+              summary: document.getElementById('inspSummary').value.trim(),
+              notes: document.getElementById('inspNotes').value.trim(),
+              tags: tags,
+              category: cat,
+              checked: false,
+            });
+          } else if (target === 'podcast') {
+            await add('podcasts', {
+              url: url,
+              title: title || '未命名灵感',
+              platform: platform,
+              cover: coverInput || generatePlaceholderCover(platform, ''),
+              summary: document.getElementById('inspSummary').value.trim(),
+              notes: '',
+              type: '对话',
+              duration: '',
+              checked: false,
+            });
+          } else if (target === 'insight') {
+            await add('insights', {
+              title: title || '未命名灵感',
+              content: document.getElementById('inspSummary').value.trim() || document.getElementById('inspNotes').value.trim(),
+              sourceType: '灵感库',
+              sourceTitle: title || '未命名灵感',
+              sourceUrl: url,
+              outputType: '灵感记录',
+              tags: tags,
+            });
+          }
+        } catch (e) {}
+      }
+
+      const syncCount = syncTargets.length;
       close();
       await this.render();
-      window.showToast('✅ 灵感已收藏');
+      window.showToast(syncCount > 0 ? `✅ 灵感已收藏，同步到 ${syncCount} 个模块` : '✅ 灵感已收藏');
     });
   }
 

@@ -321,7 +321,10 @@ export default class FitnessPage {
         ${f.videoUrl ? `
           <div style="margin-top: var(--space-2); padding: var(--space-2); background: var(--bg-inset); border-radius: var(--radius-xs);">
             <div style="font-size: var(--font-xs); color: var(--text-tertiary); margin-bottom: 4px;">${platformLabel} 跟练视频</div>
-            <a href="${f.videoUrl}" target="_blank" style="font-size: var(--font-sm); color: var(--brand); word-break: break-all;">${f.videoUrl}</a>
+            <div style="display: flex; align-items: center; gap: var(--space-2);">
+              <span style="flex: 1; font-size: var(--font-sm); color: var(--brand); word-break: break-all; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical;">${f.videoUrl}</span>
+              <button data-action="open-video" data-url="${f.videoUrl}" style="flex-shrink: 0; padding: 4px 10px; background: var(--brand); color: var(--text-inverse); border: none; border-radius: var(--radius-xs); font-size: var(--font-xs); white-space: nowrap;">▶ 播放</button>
+            </div>
           </div>
         ` : ''}
         ${f.remark ? `<div class="card-body" style="font-size: var(--font-sm); color: var(--text-secondary); margin-top: var(--space-1);">📝 ${f.remark}</div>` : ''}
@@ -431,6 +434,18 @@ export default class FitnessPage {
         if (record) this.showFormModal(record);
       });
       card.style.cursor = 'pointer';
+    });
+
+    // 视频链接跳转（PWA 中 target=_blank 不生效，用 window.open 处理）
+    document.querySelectorAll('[data-action="open-video"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const url = btn.getAttribute('data-url');
+        if (!url) return;
+        // 尝试新窗口打开，PWA 中 fallback 到当前窗口跳转
+        const w = window.open(url, '_blank');
+        if (!w) window.location.href = url;
+      });
     });
 
     document.getElementById('addRecordBtn')?.addEventListener('click', () => {
