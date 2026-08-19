@@ -4,7 +4,7 @@
  * 解决国内 GitHub Pages 访问慢导致白屏问题
  */
 
-const CACHE_VERSION = 'shisi-v1.9.1';
+const CACHE_VERSION = 'shisi-v1.9.2';
 const CACHE_STATIC = `${CACHE_VERSION}-static`;
 const CACHE_RUNTIME = `${CACHE_VERSION}-runtime`;
 
@@ -68,16 +68,48 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// === 激活：清理旧缓存 + 立即接管 ===
+// === 激活：清理旧缓存（保留上一个版本作为fallback）+ 立即接管 ===
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
       .then((keys) => {
-        return Promise.all(
-          keys
-            .filter((key) => !key.startsWith(CACHE_VERSION))
-            .map((key) => caches.delete(key))
-        );
+        // 找出所有 shisi-v 开头的版本，提取版本号排序
+        const versions = keys
+          .map(k => {
+            const m = k.match(/^shisi-v([\d.]+)-(static|runtime)$/);
+            return m ? { key: k, ver: m[1], type: m[2] } : null;
+          })
+          .filter(Boolean)
+          .sort((a, b) => {
+            const pa = a.ver.split('.').map(Number);
+            const pb = b.ver.split('.').map(Number);
+            for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+              const da = pa[i] || 0, db = pb[i] || 0;
+              if (da !== db) return db - da;
+            }
+            return 0;
+          });
+
+        // 当前版本号
+        const currentVer = CACHE_VERSION.replace('shisi-v', '');
+        // 保留当前版本 + 上一个版本，删除更早的
+        const keepVersions = new Set([currentVer]);
+        let prevVer = null;
+        for (const v of versions) {
+          if (v.ver !== currentVer && !prevVer) {
+            prevVer = v.ver;
+            keepVersions.add(v.ver);
+            break;
+          }
+        }
+
+        const toDelete = keys.filter(k => {
+          const m = k.match(/^shisi-v([\d.]+)-/);
+          if (!m) return !k.startsWith(CACHE_VERSION); // 非 shisi-v 开头的，不是当前版本就删
+          return !keepVersions.has(m[1]);
+        });
+
+        return Promise.all(toDelete.map(k => caches.delete(k)));
       })
       .then(() => self.clients.claim())
   );
@@ -130,6 +162,7 @@ self.addEventListener('fetch', (event) => {
  * 缓存优先 + 后台更新
  * 有缓存立即返回（秒开），无缓存时带超时的网络请求
  * 后台静默更新缓存，下次刷新生效新版本
+ * 网络失败时从旧版本缓存 fallback（PWA 防白屏）
  */
 async function cacheFirstWithUpdate(request) {
   const cached = await caches.match(request);
@@ -147,19 +180,25 @@ async function cacheFirstWithUpdate(request) {
     return cached;
   }
 
-  // 无缓存（首次加载）：网络请求 + 超时保护
+  // 无缓存（首次加载或SW更新后缓存清空）：网络请求 + 超时保护
+  // 导航请求给更长超时（PWA 启动关键路径）
+  const timeout = request.mode === 'navigate' ? 8000 : NETWORK_TIMEOUT;
   try {
-    const response = await fetchWithTimeout(request, NETWORK_TIMEOUT);
+    const response = await fetchWithTimeout(request, timeout);
     if (response && response.ok) {
       const cache = await caches.open(CACHE_RUNTIME);
       cache.put(request, response.clone());
     }
     return response;
   } catch (err) {
-    // 网络失败且无缓存：导航请求返回预缓存的 index.html
+    // 网络失败：尝试从所有缓存（含旧版本）查找
+    const fallback = await caches.match(request, { ignoreSearch: false });
+    if (fallback) return fallback;
+
+    // 导航请求最后兜底：返回 index.html
     if (request.mode === 'navigate') {
-      const fallback = await caches.match('./index.html');
-      if (fallback) return fallback;
+      const indexFallback = await caches.match('./index.html');
+      if (indexFallback) return indexFallback;
     }
     throw err;
   }

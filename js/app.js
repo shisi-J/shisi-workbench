@@ -530,12 +530,15 @@ function registerSW() {
         console.log('SW 注册失败（不影响使用）:', err);
       });
 
-      // SW 控制权变化时静默刷新（用户无感知）
+      // SW 控制权变化时刷新（延迟避免PWA白屏）
       let refreshing = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (refreshing) return;
         refreshing = true;
-        window.location.reload();
+        // 延迟 1.5s 让新 SW 完成预缓存，避免 PWA 模式 reload 后白屏
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+        const delay = isStandalone ? 2000 : 500;
+        setTimeout(() => window.location.reload(), delay);
       });
     });
   }
