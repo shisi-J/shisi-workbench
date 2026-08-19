@@ -368,14 +368,19 @@ export default class HomePage {
       const cached = localStorage.getItem('shisi-weather-cache');
       if (cached) {
         const data = JSON.parse(cached);
+        // 缓存有效期 30 分钟，且必须有城市名
         if (Date.now() - (data.ts || 0) < 1800000 && data.weather?.city) {
-          this.weather = data.weather;
-          return;
+          // 旧版本可能缓存了"上海"的错误数据，用版本号区分
+          const cacheVer = data.ver || 'old';
+          if (cacheVer === 'v2') {
+            this.weather = data.weather;
+            return;
+          }
         }
       }
     } catch (e) {}
 
-    // 2. 真并行：GPS + ipinfo.io + pconline 同时发起
+    // 2. 真并行：GPS + ipapi.co 同时发起
     let lat = null, lon = null, cityName = '';
 
     // GPS 包装为不 reject 的 Promise（超时/拒绝都 resolve null）
@@ -387,53 +392,48 @@ export default class HomePage {
       );
     });
 
-    const [gpsRes, ipinfoRes, pconlineRes] = await Promise.allSettled([
+    // ipapi.co: HTTPS免费、国内可访问、返回城市名和经纬度
+    const [gpsRes, ipapiRes] = await Promise.allSettled([
       gpsPromise,
-      this._fetchWithTimeout('https://ipinfo.io/json', 4000),
-      this._fetchWithTimeout('https://whois.pconline.com.cn/ipJson.jsp?json=true', 3000),
+      this._fetchWithTimeout('https://ipapi.co/json/', 4000),
     ]);
 
-    // GPS 坐标
+    // GPS 坐标（优先用于天气精度）
     if (gpsRes.status === 'fulfilled' && gpsRes.value) {
       lat = gpsRes.value.lat;
       lon = gpsRes.value.lon;
     }
 
-    // pconline → 中文城市名（需 GBK 解码，iOS Safari 不支持则自动跳过）
-    if (pconlineRes.status === 'fulfilled' && pconlineRes.value && pconlineRes.value.ok) {
+    // ipapi.co → 城市名 + 坐标（fallback）
+    let enCity = '';
+    if (ipapiRes.status === 'fulfilled' && ipapiRes.value && ipapiRes.value.ok) {
       try {
-        const buf = await pconlineRes.value.arrayBuffer();
-        let text = '';
-        try {
-          text = new TextDecoder('gbk').decode(buf);
-        } catch (e) {
-          // iOS 不支持 gbk 编码，跳过 pconline
-        }
-        if (text) {
-          const m = text.match(/\{[\s\S]*\}/);
-          if (m) {
-            const loc = JSON.parse(m[0]);
-            cityName = (loc.city || '').replace('市', '') || (loc.pro || '').replace('省', '');
+        const d = await ipapiRes.value.json();
+        if (d && !d.error) {
+          enCity = d.city || d.region || '';
+          if (lat === null && d.latitude && d.longitude) {
+            lat = d.latitude;
+            lon = d.longitude;
           }
         }
       } catch (e) {}
     }
 
-    // ipinfo.io → 坐标（GPS 没拿到时用）+ 英文城市名
-    let enCity = '';
-    if (ipinfoRes.status === 'fulfilled' && ipinfoRes.value && ipinfoRes.value.ok) {
+    // GPS 拿到坐标但没城市名 → BigDataCloud 反向地理编码（免费、HTTPS、中文）
+    if (lat !== null && !cityName) {
       try {
-        const d = await ipinfoRes.value.json();
-        if (d.loc && lat === null) {
-          const parts = d.loc.split(',');
-          lat = parseFloat(parts[0]);
-          lon = parseFloat(parts[1]);
+        const r = await this._fetchWithTimeout(
+          `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=zh`,
+          3000
+        );
+        if (r && r.ok) {
+          const g = await r.json();
+          cityName = (g.city || g.locality || g.principalSubdivision || '').replace(/市$/, '').replace(/省$/, '');
         }
-        enCity = d.city || d.region || '';
       } catch (e) {}
     }
 
-    // 英文城市名 → 中文（通过 Open-Meteo 地理编码，全程 UTF-8，iOS 友好）
+    // 英文城市名 → 中文（Open-Meteo 地理编码）
     if (!cityName && enCity) {
       try {
         const r = await this._fetchWithTimeout(
@@ -447,7 +447,7 @@ export default class HomePage {
           }
         }
       } catch (e) {}
-      if (!cityName) cityName = enCity; // 退回英文也比空白好
+      if (!cityName) cityName = enCity;
     }
 
     // 有城市名但没坐标 → 通过城市名查坐标
@@ -497,6 +497,7 @@ export default class HomePage {
       localStorage.setItem('shisi-weather-cache', JSON.stringify({
         weather: this.weather,
         ts: Date.now(),
+        ver: 'v2',
       }));
     } catch (e) {}
   }

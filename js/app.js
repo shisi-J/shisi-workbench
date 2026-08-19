@@ -530,15 +530,20 @@ function registerSW() {
         console.log('SW 注册失败（不影响使用）:', err);
       });
 
-      // SW 控制权变化时刷新（延迟避免PWA白屏）
+      // SW 控制权变化：不强制 reload，避免用户正在填写表单时丢失数据
       let refreshing = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (refreshing) return;
         refreshing = true;
-        // 延迟 1.5s 让新 SW 完成预缓存，避免 PWA 模式 reload 后白屏
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-        const delay = isStandalone ? 2000 : 500;
-        setTimeout(() => window.location.reload(), delay);
+        // 检查是否有弹窗打开（用户正在编辑）
+        const hasModal = document.querySelector('.modal-overlay.active');
+        if (hasModal) {
+          // 有弹窗打开：只提示，不刷新
+          window.showToast('📲 新版本已就绪，完成当前编辑后请手动刷新页面', 5000);
+        } else {
+          // 无弹窗：延迟刷新
+          setTimeout(() => window.location.reload(), 1500);
+        }
       });
     });
   }

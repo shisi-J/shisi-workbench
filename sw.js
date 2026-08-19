@@ -4,7 +4,7 @@
  * 解决国内 GitHub Pages 访问慢导致白屏问题
  */
 
-const CACHE_VERSION = 'shisi-v1.9.2';
+const CACHE_VERSION = 'shisi-v1.9.3';
 const CACHE_STATIC = `${CACHE_VERSION}-static`;
 const CACHE_RUNTIME = `${CACHE_VERSION}-runtime`;
 
@@ -136,7 +136,10 @@ self.addEventListener('fetch', (event) => {
   if (url.hostname.includes('open-meteo.com') ||
       url.hostname.includes('nominatim.openstreetmap.org') ||
       url.hostname.includes('ipinfo.io') ||
-      url.hostname.includes('pconline.com.cn')) {
+      url.hostname.includes('pconline.com.cn') ||
+      url.hostname.includes('ip-api.com') ||
+      url.hostname.includes('ipapi.co') ||
+      url.hostname.includes('bigdatacloud.net')) {
     return;
   }
 
