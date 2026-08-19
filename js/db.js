@@ -1750,6 +1750,7 @@ export {
   cloudCheckExists,
   getCloudSyncInfo,
   flushCloudSync,
+  getGitHubToken,
   getSetting,
   setSetting,
   initSeedData,

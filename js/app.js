@@ -581,14 +581,58 @@ async function init() {
 // 返回 true 表示已恢复或正在恢复，调用方应跳过种子数据初始化
 async function checkCloudRestore() {
   try {
-    const { count, cloudCheckExists } = await import('./db.js');
+    const { count, getGitHubToken, cloudCheckExists } = await import('./db.js');
     const todoCount = await count('todos');
     const inspirationCount = await count('inspirations');
 
     // 本地有数据，不需要恢复
     if (todoCount > 0 || inspirationCount > 0) return false;
 
-    // 本地为空，检查云端是否有备份
+    // 本地为空，检查是否配置了 Token
+    const token = await getGitHubToken();
+
+    if (!token) {
+      // 没有 Token，引导用户去配置
+      return new Promise((resolve) => {
+        const div = document.createElement('div');
+        div.className = 'modal-overlay active';
+        div.innerHTML = `
+          <div class="modal">
+            <div class="modal-header">
+              <div class="modal-title">📱 欢迎使用诗思工作台</div>
+            </div>
+            <div style="padding: var(--space-4);">
+              <div style="font-size: var(--font-base); color: var(--text-secondary); margin-bottom: var(--space-3); line-height: 1.6;">
+                检测到本地数据为空。<br><br>
+                如果你在其他设备（网页版）已有数据并配置了云同步：<br>
+                1. 点击下方"去配置"<br>
+                2. 填入你的 GitHub Token<br>
+                3. 回到设置页点击"📥 恢复"<br><br>
+                <span style="color: var(--text-tertiary); font-size: var(--font-xs);">Token 用于通过 GitHub Gist 同步数据，仅在本地存储</span>
+              </div>
+              <div style="display: flex; gap: var(--space-2);">
+                <button class="btn btn-secondary" id="cloudSkipBtn" style="flex:1;">跳过</button>
+                <button class="btn btn-primary" id="goConfigBtn" style="flex:1;">🔑 去配置</button>
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(div);
+        const close = () => div.remove();
+
+        document.getElementById('cloudSkipBtn').addEventListener('click', () => {
+          close();
+          resolve(false);
+        });
+        document.getElementById('goConfigBtn').addEventListener('click', () => {
+          close();
+          window.location.hash = '/settings';
+          resolve(false);
+        });
+      });
+    }
+
+    // 有 Token，检查云端是否有备份
     const hasCloud = await cloudCheckExists();
     if (!hasCloud) return false;
 
