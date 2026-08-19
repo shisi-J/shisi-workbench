@@ -667,9 +667,9 @@ export default class InspirationPage {
         </div>
 
         <div class="form-group">
-          <div style="display: flex; align-items: center; gap: 8px; padding: 10px var(--space-2); background: var(--bg-inset); border-radius: var(--radius-xs); -webkit-user-select: none; user-select: none;">
-            <input type="checkbox" id="inspFavorite" ${data.favorite ? 'checked' : ''} style="width: 22px; height: 22px; flex-shrink: 0; cursor: pointer; accent-color: var(--brand); position: relative; z-index: 10;">
-            <label for="inspFavorite" style="font-size: var(--font-sm); cursor: pointer; flex: 1; -webkit-user-select: none; user-select: none;">⭐ 收藏置顶</label>
+          <div id="favToggle" data-fav="${data.favorite ? '1' : '0'}" style="display: flex; align-items: center; gap: 8px; padding: 10px var(--space-2); background: var(--bg-inset); border-radius: var(--radius-xs); cursor: pointer; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;">
+            <span id="favBox" style="width: 22px; height: 22px; border: 2px solid var(--border-default); border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: ${data.favorite ? 'var(--brand)' : 'transparent'}; border-color: ${data.favorite ? 'var(--brand)' : 'var(--border-default)'}; color: var(--text-inverse); font-size: 14px; line-height: 1;">${data.favorite ? '✓' : ''}</span>
+            <span style="font-size: var(--font-sm); flex: 1;">⭐ 收藏置顶</span>
           </div>
         </div>
 
@@ -678,42 +678,54 @@ export default class InspirationPage {
         <div class="form-group">
           <label class="form-label">同步到其他模块（选填）</label>
           <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; padding: var(--space-2); background: var(--bg-inset); border-radius: var(--radius-xs);">
-            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 6px 8px;">
-              <input type="checkbox" class="sync-target" data-target="learn-ai" style="width: 16px; height: 16px; accent-color: var(--brand);"> 🤖 学习AI
-            </label>
-            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 6px 8px;">
-              <input type="checkbox" class="sync-target" data-target="learn-english" style="width: 16px; height: 16px; accent-color: var(--brand);"> 🔤 学习英语
-            </label>
-            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 6px 8px;">
-              <input type="checkbox" class="sync-target" data-target="learn-media" style="width: 16px; height: 16px; accent-color: var(--brand);"> 📱 新媒体
-            </label>
-            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 6px 8px;">
-              <input type="checkbox" class="sync-target" data-target="learn-expression" style="width: 16px; height: 16px; accent-color: var(--brand);"> 📖 学习表达
-            </label>
-            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 6px 8px;">
-              <input type="checkbox" class="sync-target" data-target="podcast" style="width: 16px; height: 16px; accent-color: var(--brand);"> 🎙️ 播客
-            </label>
-            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 6px 8px;">
-              <input type="checkbox" class="sync-target" data-target="insight" style="width: 16px; height: 16px; accent-color: var(--brand);"> 🧠 感悟输出
-            </label>
-            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 6px 8px;">
-              <input type="checkbox" class="sync-target" data-target="life-fitness" style="width: 16px; height: 16px; accent-color: var(--brand);"> 💪 健身打卡
-            </label>
-            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 6px 8px;">
-              <input type="checkbox" class="sync-target" data-target="life-eat" style="width: 16px; height: 16px; accent-color: var(--brand);"> 🍽️ 美食探店
-            </label>
-            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 6px 8px;">
-              <input type="checkbox" class="sync-target" data-target="life-beauty" style="width: 16px; height: 16px; accent-color: var(--brand);"> 💄 美妆穿搭
-            </label>
-            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 6px 8px;">
-              <input type="checkbox" class="sync-target" data-target="life-travel" style="width: 16px; height: 16px; accent-color: var(--brand);"> ✈️ 行程游记
-            </label>
-            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 6px 8px;">
-              <input type="checkbox" class="sync-target" data-target="life-home" style="width: 16px; height: 16px; accent-color: var(--brand);"> 🏠 小屋
-            </label>
-            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 6px 8px;">
-              <input type="checkbox" class="sync-target" data-target="life-social" style="width: 16px; height: 16px; accent-color: var(--brand);"> 🤝 社交
-            </label>
+            <div class="sync-toggle" data-target="learn-ai" data-checked="0" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: var(--font-xs); padding: 8px; border-radius: var(--radius-xs); -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;">
+              <span class="sync-box" style="width: 18px; height: 18px; border: 2px solid var(--border-default); border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; line-height: 1; color: var(--text-inverse);"></span>
+              🤖 学习AI
+            </div>
+            <div class="sync-toggle" data-target="learn-english" data-checked="0" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: var(--font-xs); padding: 8px; border-radius: var(--radius-xs); -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;">
+              <span class="sync-box" style="width: 18px; height: 18px; border: 2px solid var(--border-default); border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; line-height: 1; color: var(--text-inverse);"></span>
+              🔤 学习英语
+            </div>
+            <div class="sync-toggle" data-target="learn-media" data-checked="0" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: var(--font-xs); padding: 8px; border-radius: var(--radius-xs); -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;">
+              <span class="sync-box" style="width: 18px; height: 18px; border: 2px solid var(--border-default); border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; line-height: 1; color: var(--text-inverse);"></span>
+              📱 新媒体
+            </div>
+            <div class="sync-toggle" data-target="learn-expression" data-checked="0" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: var(--font-xs); padding: 8px; border-radius: var(--radius-xs); -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;">
+              <span class="sync-box" style="width: 18px; height: 18px; border: 2px solid var(--border-default); border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; line-height: 1; color: var(--text-inverse);"></span>
+              📖 学习表达
+            </div>
+            <div class="sync-toggle" data-target="podcast" data-checked="0" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: var(--font-xs); padding: 8px; border-radius: var(--radius-xs); -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;">
+              <span class="sync-box" style="width: 18px; height: 18px; border: 2px solid var(--border-default); border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; line-height: 1; color: var(--text-inverse);"></span>
+              🎙️ 播客
+            </div>
+            <div class="sync-toggle" data-target="insight" data-checked="0" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: var(--font-xs); padding: 8px; border-radius: var(--radius-xs); -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;">
+              <span class="sync-box" style="width: 18px; height: 18px; border: 2px solid var(--border-default); border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; line-height: 1; color: var(--text-inverse);"></span>
+              🧠 感悟输出
+            </div>
+            <div class="sync-toggle" data-target="life-fitness" data-checked="0" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: var(--font-xs); padding: 8px; border-radius: var(--radius-xs); -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;">
+              <span class="sync-box" style="width: 18px; height: 18px; border: 2px solid var(--border-default); border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; line-height: 1; color: var(--text-inverse);"></span>
+              💪 健身打卡
+            </div>
+            <div class="sync-toggle" data-target="life-eat" data-checked="0" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: var(--font-xs); padding: 8px; border-radius: var(--radius-xs); -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;">
+              <span class="sync-box" style="width: 18px; height: 18px; border: 2px solid var(--border-default); border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; line-height: 1; color: var(--text-inverse);"></span>
+              🍽️ 美食探店
+            </div>
+            <div class="sync-toggle" data-target="life-beauty" data-checked="0" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: var(--font-xs); padding: 8px; border-radius: var(--radius-xs); -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;">
+              <span class="sync-box" style="width: 18px; height: 18px; border: 2px solid var(--border-default); border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; line-height: 1; color: var(--text-inverse);"></span>
+              💄 美妆穿搭
+            </div>
+            <div class="sync-toggle" data-target="life-travel" data-checked="0" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: var(--font-xs); padding: 8px; border-radius: var(--radius-xs); -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;">
+              <span class="sync-box" style="width: 18px; height: 18px; border: 2px solid var(--border-default); border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; line-height: 1; color: var(--text-inverse);"></span>
+              ✈️ 行程游记
+            </div>
+            <div class="sync-toggle" data-target="life-home" data-checked="0" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: var(--font-xs); padding: 8px; border-radius: var(--radius-xs); -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;">
+              <span class="sync-box" style="width: 18px; height: 18px; border: 2px solid var(--border-default); border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; line-height: 1; color: var(--text-inverse);"></span>
+              🏠 小屋
+            </div>
+            <div class="sync-toggle" data-target="life-social" data-checked="0" style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: var(--font-xs); padding: 8px; border-radius: var(--radius-xs); -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;">
+              <span class="sync-box" style="width: 18px; height: 18px; border: 2px solid var(--border-default); border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; line-height: 1; color: var(--text-inverse);"></span>
+              🤝 社交
+            </div>
           </div>
         </div>
         ` : ''}
@@ -791,6 +803,47 @@ export default class InspirationPage {
       }
     });
 
+    // 收藏置顶切换（用 click 事件，不用原生 checkbox）
+    document.getElementById('favToggle')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const toggle = e.currentTarget;
+      const box = document.getElementById('favBox');
+      const isFav = toggle.dataset.fav === '1';
+      const newState = !isFav;
+      toggle.dataset.fav = newState ? '1' : '0';
+      if (newState) {
+        box.style.background = 'var(--brand)';
+        box.style.borderColor = 'var(--brand)';
+        box.textContent = '✓';
+      } else {
+        box.style.background = 'transparent';
+        box.style.borderColor = 'var(--border-default)';
+        box.textContent = '';
+      }
+    });
+
+    // 同步模块切换
+    modal.querySelectorAll('.sync-toggle').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const box = el.querySelector('.sync-box');
+        const isChecked = el.dataset.checked === '1';
+        const newState = !isChecked;
+        el.dataset.checked = newState ? '1' : '0';
+        if (newState) {
+          box.style.background = 'var(--brand)';
+          box.style.borderColor = 'var(--brand)';
+          box.textContent = '✓';
+          el.style.background = 'var(--brand)15';
+        } else {
+          box.style.background = 'transparent';
+          box.style.borderColor = 'var(--border-default)';
+          box.textContent = '';
+          el.style.background = '';
+        }
+      });
+    });
+
     // 保存
     document.getElementById('saveInsp').addEventListener('click', async () => {
       const url = document.getElementById('inspUrl').value.trim();
@@ -813,14 +866,14 @@ export default class InspirationPage {
         summary: document.getElementById('inspSummary').value.trim(),
         tags,
         notes: document.getElementById('inspNotes').value.trim(),
-        favorite: document.getElementById('inspFavorite').checked,
+        favorite: document.getElementById('favToggle').dataset.fav === '1',
         attachments: getAttachments(),
       };
 
       await add('inspirations', record);
 
       // 同步到其他选中模块
-      const syncTargets = modal.querySelectorAll('.sync-target:checked');
+      const syncTargets = modal.querySelectorAll('.sync-toggle[data-checked="1"]');
       for (const cb of syncTargets) {
         const target = cb.getAttribute('data-target');
         try {
@@ -1044,7 +1097,7 @@ export default class InspirationPage {
         summary: modal.querySelector('#inspSummary').value.trim(),
         tags,
         notes: modal.querySelector('#inspNotes').value.trim(),
-        favorite: modal.querySelector('#inspFavorite').checked,
+        favorite: modal.querySelector('#favToggle').dataset.fav === '1',
         attachments,
       });
 

@@ -1688,14 +1688,14 @@ function _autoCloudSync() {
   _cloudSyncTimer = setTimeout(async () => {
     _cloudSyncTimer = null;
     try {
-      const token = await getSetting('github_token', '');
+      const token = await getGitHubToken();
       if (!token) return; // 未配置 token，跳过
       await cloudSync();
       console.log('☁️ 自动云同步完成');
     } catch (e) {
       console.log('自动云同步失败:', e.message);
     }
-  }, 30000);
+  }, 5000);
 }
 
 export {
