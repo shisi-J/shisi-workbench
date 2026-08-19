@@ -1594,7 +1594,30 @@ async function cloudSync() {
     throw new Error('数据量过大（超过1MB），请清理不需要的数据后重试');
   }
 
-  const gistId = await getGistId();
+  // 搜索所有备份 Gist，合并为同一个
+  const allGists = await findAllCloudGists(token);
+  let targetId = null;
+
+  if (allGists.length > 0) {
+    // 选最近更新的那个作为目标
+    allGists.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    targetId = allGists[0].id;
+    // 删除多余的 Gist
+    for (let i = 1; i < allGists.length; i++) {
+      try {
+        await fetch(`https://api.github.com/gists/${allGists[i].id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' },
+        });
+      } catch (e) {}
+    }
+  }
+
+  // 保存目标 Gist ID
+  if (targetId) {
+    await setSetting(GIST_SETTING_KEY, targetId);
+    localStorage.setItem('shisi-gist-id', targetId);
+  }
 
   const headers = {
     'Authorization': `token ${token}`,
@@ -1613,41 +1636,19 @@ async function cloudSync() {
   });
 
   let res;
-  if (gistId) {
-    res = await fetch(`https://api.github.com/gists/${gistId}`, {
+  if (targetId) {
+    res = await fetch(`https://api.github.com/gists/${targetId}`, {
       method: 'PATCH', headers, body,
     });
-    // 如果 Gist 已被删除（404），重新搜索并创建
     if (res.status === 404) {
-      const found = await findCloudGist(token);
-      if (found) {
-        gistId = found;
-        await setSetting(GIST_SETTING_KEY, found);
-        localStorage.setItem('shisi-gist-id', found);
-        res = await fetch(`https://api.github.com/gists/${gistId}`, {
-          method: 'PATCH', headers, body,
-        });
-      } else {
-        res = await fetch('https://api.github.com/gists', {
-          method: 'POST', headers, body,
-        });
-      }
-    }
-  } else {
-    // 没有本地 Gist ID，先搜索是否已有备份
-    const found = await findCloudGist(token);
-    if (found) {
-      gistId = found;
-      await setSetting(GIST_SETTING_KEY, found);
-      localStorage.setItem('shisi-gist-id', found);
-      res = await fetch(`https://api.github.com/gists/${gistId}`, {
-        method: 'PATCH', headers, body,
-      });
-    } else {
       res = await fetch('https://api.github.com/gists', {
         method: 'POST', headers, body,
       });
     }
+  } else {
+    res = await fetch('https://api.github.com/gists', {
+      method: 'POST', headers, body,
+    });
   }
 
   if (!res.ok) {
@@ -1656,13 +1657,13 @@ async function cloudSync() {
   }
 
   const data = await res.json();
-  if (!gistId && data.id) {
+  if (data.id) {
     await setSetting(GIST_SETTING_KEY, data.id);
     localStorage.setItem('shisi-gist-id', data.id);
   }
 
   await setSetting('last_cloud_sync', new Date().toISOString());
-  return data.id || gistId;
+  return data.id || targetId;
 }
 
 // 从 Gist 恢复
@@ -1670,18 +1671,25 @@ async function cloudRestore() {
   const token = await getGitHubToken();
   if (!token) throw new Error('请先在设置页配置 GitHub Token');
 
-  let gistId = await getGistId();
+  // 搜索所有备份 Gist，选最新的
+  const allGists = await findAllCloudGists(token);
+  if (allGists.length === 0) {
+    throw new Error('没有云端备份记录，请先在一端同步数据');
+  }
 
-  // 没有本地 Gist ID，自动搜索已有的备份
-  if (!gistId) {
-    const found = await findCloudGist(token);
-    if (found) {
-      gistId = found;
-      await setSetting(GIST_SETTING_KEY, found);
-      localStorage.setItem('shisi-gist-id', found);
-    } else {
-      throw new Error('没有云端备份记录，请先在一端同步数据');
-    }
+  allGists.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  const gistId = allGists[0].id;
+  await setSetting(GIST_SETTING_KEY, gistId);
+  localStorage.setItem('shisi-gist-id', gistId);
+
+  // 删除多余的 Gist
+  for (let i = 1; i < allGists.length; i++) {
+    try {
+      await fetch(`https://api.github.com/gists/${allGists[i].id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' },
+      });
+    } catch (e) {}
   }
 
   const res = await fetch(`https://api.github.com/gists/${gistId}`, {
@@ -1699,22 +1707,23 @@ async function cloudRestore() {
   return true;
 }
 
-// 搜索用户 GitHub Gist 中已有的备份
-async function findCloudGist(token) {
+// 搜索用户 GitHub Gist 中所有包含备份文件的 Gist
+async function findAllCloudGists(token) {
   try {
     const res = await fetch('https://api.github.com/gists?per_page=100', {
       headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' },
     });
-    if (!res.ok) return null;
+    if (!res.ok) return [];
     const gists = await res.json();
+    const result = [];
     for (const g of gists) {
       if (g.files && g.files[GIST_FILENAME]) {
-        return g.id;
+        result.push({ id: g.id, updatedAt: g.updated_at || g.created_at });
       }
     }
-    return null;
+    return result;
   } catch (e) {
-    return null;
+    return [];
   }
 }
 
@@ -1723,27 +1732,15 @@ async function cloudCheckExists() {
   const token = await getGitHubToken();
   if (!token) return false;
 
-  // 先检查本地是否有 Gist ID
-  const gistId = await getGistId();
-  if (gistId) {
-    try {
-      const res = await fetch(`https://api.github.com/gists/${gistId}`, {
-        headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' },
-      });
-      return res.ok;
-    } catch (e) {
-      return false;
-    }
-  }
+  const allGists = await findAllCloudGists(token);
+  if (allGists.length === 0) return false;
 
-  // 没有本地 Gist ID，搜索用户 Gist 列表
-  const found = await findCloudGist(token);
-  if (found) {
-    await setSetting(GIST_SETTING_KEY, found);
-    localStorage.setItem('shisi-gist-id', found);
-    return true;
-  }
-  return false;
+  // 选最新的，保存 ID
+  allGists.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  const gistId = allGists[0].id;
+  await setSetting(GIST_SETTING_KEY, gistId);
+  localStorage.setItem('shisi-gist-id', gistId);
+  return true;
 }
 
 // 获取上次同步信息
