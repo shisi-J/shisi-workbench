@@ -1440,6 +1440,12 @@ const PODCAST_SEED = [
 
 // 初始化所有种子数据（仅首次使用时执行）
 async function initSeedData() {
+  // 如果已经初始化过，不再重复插入种子数据
+  // 防止 IndexedDB 被清除后种子数据覆盖用户云端恢复的数据
+  if (localStorage.getItem('shisi-seeded') === '1') {
+    console.log('种子数据已初始化过，跳过');
+    return;
+  }
   try {
     // 初始化学习种子数据
     const learnCategories = ['expression', 'ai', 'english', 'media', 'office', 'finance'];
@@ -1529,6 +1535,8 @@ async function initSeedData() {
         }
       }
     }
+    // 标记种子数据已初始化，防止 IndexedDB 被清除后重复插入
+    localStorage.setItem('shisi-seeded', '1');
   } catch (e) {
     console.error('种子数据初始化失败:', e);
   }

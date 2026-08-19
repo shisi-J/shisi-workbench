@@ -554,7 +554,11 @@ function preventZoom() {
 // === 初始化 ===
 async function init() {
   initTheme();
-  await initSeedData();
+  // 先检查是否需要从云端恢复，再决定是否插入种子数据
+  const restored = await checkCloudRestore();
+  if (!restored) {
+    await initSeedData();
+  }
   initRouter();
   initSidebar();
   initSearch();
@@ -562,64 +566,77 @@ async function init() {
   initThemeToggle();
   registerSW();
   preventZoom();
-  // 页面切到后台时立即云同步，防止数据丢失
+  // 页面切到后台或关闭时立即云同步，防止数据丢失
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
       import('./db.js').then(({ flushCloudSync }) => flushCloudSync());
     }
   });
-  // 启动后检查是否需要从云端恢复（本地数据为空时）
-  checkCloudRestore();
+  window.addEventListener('pagehide', () => {
+    import('./db.js').then(({ flushCloudSync }) => flushCloudSync());
+  });
 }
 
 // 检测本地数据是否为空，如果为空且配置了云同步，提示恢复
+// 返回 true 表示已恢复或正在恢复，调用方应跳过种子数据初始化
 async function checkCloudRestore() {
   try {
     const { count, cloudCheckExists } = await import('./db.js');
     const todoCount = await count('todos');
     const inspirationCount = await count('inspirations');
-    // 如果本地完全没有用户数据，检查云端
-    if (todoCount === 0 && inspirationCount === 0) {
-      const hasCloud = await cloudCheckExists();
-      if (hasCloud) {
-        const div = document.createElement('div');
-        div.className = 'modal-overlay active';
-        div.innerHTML = `
-          <div class="modal">
-            <div class="modal-header">
-              <div class="modal-title">☁️ 发现云端备份</div>
+
+    // 本地有数据，不需要恢复
+    if (todoCount > 0 || inspirationCount > 0) return false;
+
+    // 本地为空，检查云端是否有备份
+    const hasCloud = await cloudCheckExists();
+    if (!hasCloud) return false;
+
+    // 有云端备份，弹窗询问
+    return new Promise((resolve) => {
+      const div = document.createElement('div');
+      div.className = 'modal-overlay active';
+      div.innerHTML = `
+        <div class="modal">
+          <div class="modal-header">
+            <div class="modal-title">☁️ 发现云端备份</div>
+          </div>
+          <div style="padding: var(--space-4);">
+            <div style="font-size: var(--font-base); color: var(--text-secondary); margin-bottom: var(--space-3); line-height: 1.6;">
+              检测到本地数据为空，但云端有备份数据。<br>
+              是否从云端恢复？
             </div>
-            <div style="padding: var(--space-4);">
-              <div style="font-size: var(--font-base); color: var(--text-secondary); margin-bottom: var(--space-3); line-height: 1.6;">
-                检测到本地数据为空，但云端有备份数据。<br>
-                是否从云端恢复？
-              </div>
-              <div style="display: flex; gap: var(--space-2);">
-                <button class="btn btn-secondary" id="cloudSkipBtn" style="flex:1;">暂不恢复</button>
-                <button class="btn btn-primary" id="cloudYesBtn" style="flex:1;">☁️ 恢复</button>
-              </div>
+            <div style="display: flex; gap: var(--space-2);">
+              <button class="btn btn-secondary" id="cloudSkipBtn" style="flex:1;">暂不恢复</button>
+              <button class="btn btn-primary" id="cloudYesBtn" style="flex:1;">☁️ 恢复</button>
             </div>
           </div>
-        `;
-        document.body.appendChild(div);
-        const close = () => div.remove();
-        document.getElementById('cloudSkipBtn').addEventListener('click', close);
-        document.getElementById('cloudYesBtn').addEventListener('click', async () => {
-          close();
-          const { cloudRestore } = await import('./db.js');
-          try {
-            window.showToast('⏳ 正在从云端恢复...');
-            await cloudRestore();
-            window.showToast('✅ 恢复成功');
-            setTimeout(() => location.reload(), 1500);
-          } catch (err) {
-            window.showToast('恢复失败: ' + err.message, 4000);
-          }
-        });
-      }
-    }
+        </div>
+      `;
+      document.body.appendChild(div);
+      const close = () => div.remove();
+
+      document.getElementById('cloudSkipBtn').addEventListener('click', () => {
+        close();
+        resolve(false);
+      });
+      document.getElementById('cloudYesBtn').addEventListener('click', async () => {
+        close();
+        const { cloudRestore } = await import('./db.js');
+        try {
+          window.showToast('⏳ 正在从云端恢复...');
+          await cloudRestore();
+          window.showToast('✅ 恢复成功');
+          setTimeout(() => location.reload(), 1500);
+        } catch (err) {
+          window.showToast('恢复失败: ' + err.message, 4000);
+          resolve(false);
+        }
+      });
+    });
   } catch (e) {
     console.log('云恢复检查失败:', e);
+    return false;
   }
 }
 
