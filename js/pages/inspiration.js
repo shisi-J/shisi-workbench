@@ -667,10 +667,10 @@ export default class InspirationPage {
         </div>
 
         <div class="form-group">
-          <label class="form-label" style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: var(--space-2); background: var(--bg-inset); border-radius: var(--radius-xs);">
-            <input type="checkbox" id="inspFavorite" ${data.favorite ? 'checked' : ''} style="width: 18px; height: 18px; flex-shrink: 0; cursor: pointer; accent-color: var(--brand);">
-            <span style="font-size: var(--font-sm);">⭐ 收藏置顶</span>
-          </label>
+          <div style="display: flex; align-items: center; gap: 8px; padding: 10px var(--space-2); background: var(--bg-inset); border-radius: var(--radius-xs); -webkit-user-select: none; user-select: none;">
+            <input type="checkbox" id="inspFavorite" ${data.favorite ? 'checked' : ''} style="width: 22px; height: 22px; flex-shrink: 0; cursor: pointer; accent-color: var(--brand); position: relative; z-index: 10;">
+            <label for="inspFavorite" style="font-size: var(--font-sm); cursor: pointer; flex: 1; -webkit-user-select: none; user-select: none;">⭐ 收藏置顶</label>
+          </div>
         </div>
 
         <!-- 同步到其他模块 -->
@@ -678,23 +678,41 @@ export default class InspirationPage {
         <div class="form-group">
           <label class="form-label">同步到其他模块（选填）</label>
           <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; padding: var(--space-2); background: var(--bg-inset); border-radius: var(--radius-xs);">
-            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 4px 6px;">
-              <input type="checkbox" class="sync-target" data-target="learn-ai" style="width: 14px; height: 14px; accent-color: var(--brand);"> 🤖 学习AI
+            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 6px 8px;">
+              <input type="checkbox" class="sync-target" data-target="learn-ai" style="width: 16px; height: 16px; accent-color: var(--brand);"> 🤖 学习AI
             </label>
-            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 4px 6px;">
-              <input type="checkbox" class="sync-target" data-target="learn-english" style="width: 14px; height: 14px; accent-color: var(--brand);"> 🔤 学习英语
+            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 6px 8px;">
+              <input type="checkbox" class="sync-target" data-target="learn-english" style="width: 16px; height: 16px; accent-color: var(--brand);"> 🔤 学习英语
             </label>
-            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 4px 6px;">
-              <input type="checkbox" class="sync-target" data-target="learn-media" style="width: 14px; height: 14px; accent-color: var(--brand);"> 📱 新媒体
+            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 6px 8px;">
+              <input type="checkbox" class="sync-target" data-target="learn-media" style="width: 16px; height: 16px; accent-color: var(--brand);"> 📱 新媒体
             </label>
-            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 4px 6px;">
-              <input type="checkbox" class="sync-target" data-target="podcast" style="width: 14px; height: 14px; accent-color: var(--brand);"> 🎙️ 播客
+            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 6px 8px;">
+              <input type="checkbox" class="sync-target" data-target="learn-expression" style="width: 16px; height: 16px; accent-color: var(--brand);"> 📖 学习表达
             </label>
-            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 4px 6px;">
-              <input type="checkbox" class="sync-target" data-target="insight" style="width: 14px; height: 14px; accent-color: var(--brand);"> 🧠 感悟输出
+            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 6px 8px;">
+              <input type="checkbox" class="sync-target" data-target="podcast" style="width: 16px; height: 16px; accent-color: var(--brand);"> 🎙️ 播客
             </label>
-            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 4px 6px;">
-              <input type="checkbox" class="sync-target" data-target="learn-expression" style="width: 14px; height: 14px; accent-color: var(--brand);"> 📖 学习表达
+            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 6px 8px;">
+              <input type="checkbox" class="sync-target" data-target="insight" style="width: 16px; height: 16px; accent-color: var(--brand);"> 🧠 感悟输出
+            </label>
+            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 6px 8px;">
+              <input type="checkbox" class="sync-target" data-target="life-fitness" style="width: 16px; height: 16px; accent-color: var(--brand);"> 💪 健身打卡
+            </label>
+            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 6px 8px;">
+              <input type="checkbox" class="sync-target" data-target="life-eat" style="width: 16px; height: 16px; accent-color: var(--brand);"> 🍽️ 美食探店
+            </label>
+            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 6px 8px;">
+              <input type="checkbox" class="sync-target" data-target="life-beauty" style="width: 16px; height: 16px; accent-color: var(--brand);"> 💄 美妆穿搭
+            </label>
+            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 6px 8px;">
+              <input type="checkbox" class="sync-target" data-target="life-travel" style="width: 16px; height: 16px; accent-color: var(--brand);"> ✈️ 行程游记
+            </label>
+            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 6px 8px;">
+              <input type="checkbox" class="sync-target" data-target="life-home" style="width: 16px; height: 16px; accent-color: var(--brand);"> 🏠 小屋
+            </label>
+            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: var(--font-xs); padding: 6px 8px;">
+              <input type="checkbox" class="sync-target" data-target="life-social" style="width: 16px; height: 16px; accent-color: var(--brand);"> 🤝 社交
             </label>
           </div>
         </div>
@@ -840,6 +858,19 @@ export default class InspirationPage {
               sourceUrl: url,
               outputType: '灵感记录',
               tags: tags,
+            });
+          } else if (target.startsWith('life-')) {
+            const cat = target.replace('life-', '');
+            await add('lifeRecords', {
+              url: url,
+              title: title || '未命名灵感',
+              platform: platform,
+              cover: coverInput || generatePlaceholderCover(platform, ''),
+              summary: document.getElementById('inspSummary').value.trim(),
+              notes: document.getElementById('inspNotes').value.trim(),
+              tags: tags,
+              category: cat,
+              createdAt: new Date().toISOString(),
             });
           }
         } catch (e) {}
