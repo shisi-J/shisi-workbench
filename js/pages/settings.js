@@ -17,7 +17,7 @@ export default class SettingsPage {
     const aiUrl = localStorage.getItem('shisi-ai-url') || 'https://api.chatanywhere.tech/v1/chat/completions';
     const aiModel = localStorage.getItem('shisi-ai-model') || 'gpt-3.5-turbo';
     const encKey = getEncryptionKey();
-    const appVersion = '1.9.16';
+    const appVersion = '1.9.17';
 
     this.container.innerHTML = `
       <div class="settings-page">
@@ -149,7 +149,7 @@ export default class SettingsPage {
             <label class="form-label">加密密钥</label>
             <input type="password" class="form-input" id="encKey" value="${encKey}" placeholder="设置加密密钥">
             <div style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: 4px;">
-              ⚠️ 密钥用于加密本地数据，请妥善保管。更换密钥后旧备份将无法解密。
+              ⚠️ 密钥用于加密云同步数据。<strong>两端必须使用相同密钥</strong>，否则恢复时解密失败。如果没改过密钥，保持默认即可。
             </div>
           </div>
           <button class="btn btn-primary btn-block" id="saveEncKey">保存密钥</button>
@@ -258,7 +258,11 @@ export default class SettingsPage {
         window.showToast('✅ 已从云端恢复');
         setTimeout(() => location.reload(), 1500);
       } catch (err) {
-        window.showToast('恢复失败: ' + err.message, 4000);
+        if (err.message.includes('解密失败')) {
+          window.showToast('解密失败：请确保加密密钥与同步端一致', 5000);
+        } else {
+          window.showToast('恢复失败: ' + err.message, 4000);
+        }
       }
       btn.textContent = '📥 恢复';
       btn.disabled = false;

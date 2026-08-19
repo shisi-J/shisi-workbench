@@ -1703,7 +1703,30 @@ async function cloudRestore() {
   if (!file || !file.content) throw new Error('云端备份为空');
 
   const backupData = JSON.parse(file.content);
-  await importAll(backupData);
+
+  // 尝试解密
+  const decrypted = importDecrypted(backupData);
+  if (!decrypted) {
+    throw new Error('解密失败：加密密钥不匹配。请在设置页配置与同步端相同的加密密钥');
+  }
+
+  // 清空并恢复（跳过 _backups 表）
+  for (const tableName of Object.keys(decrypted)) {
+    if (tableName === '_backups') continue;
+    try {
+      if (db.table(tableName)) {
+        await db.table(tableName).clear();
+        if (decrypted[tableName].length > 0) {
+          await db.table(tableName).bulkAdd(decrypted[tableName]);
+        }
+      }
+    } catch (e) {
+      console.log(`恢复表 ${tableName} 失败:`, e);
+    }
+  }
+
+  // 标记种子数据已初始化（恢复的数据包含种子数据）
+  localStorage.setItem('shisi-seeded', '1');
   return true;
 }
 
