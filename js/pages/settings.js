@@ -18,6 +18,21 @@ export default class SettingsPage {
     const aiModel = localStorage.getItem('shisi-ai-model') || 'gpt-3.5-turbo';
     const encKey = getEncryptionKey();
 
+    // 读取 SW 缓存版本号作为应用版本
+    let appVersion = '1.0.0';
+    if ('serviceWorker' in navigator) {
+      try {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg) {
+          const cacheNames = await caches.keys();
+          const shisiCache = cacheNames.find(k => k.startsWith('shisi-v'));
+          if (shisiCache) {
+            appVersion = shisiCache.replace('shisi-v', '').replace(/-(static|runtime)$/, '');
+          }
+        }
+      } catch (e) {}
+    }
+
     this.container.innerHTML = `
       <div class="settings-page">
         <div class="page-header">
@@ -163,7 +178,7 @@ export default class SettingsPage {
           </div>
           <div class="setting-item" style="padding: 0;">
             <span class="setting-label">版本</span>
-            <span class="setting-value">1.0.0</span>
+            <span class="setting-value">${appVersion}</span>
           </div>
           <div class="setting-item" style="padding: 0;">
             <span class="setting-label">部署方式</span>
