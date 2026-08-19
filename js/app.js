@@ -562,6 +562,12 @@ async function init() {
   initThemeToggle();
   registerSW();
   preventZoom();
+  // 页面切到后台时立即云同步，防止数据丢失
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      import('./db.js').then(({ flushCloudSync }) => flushCloudSync());
+    }
+  });
   // 启动后检查是否需要从云端恢复（本地数据为空时）
   checkCloudRestore();
 }

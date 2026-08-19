@@ -1681,8 +1681,9 @@ async function getCloudSyncInfo() {
   };
 }
 
-// 防抖云同步：数据变更后 30 秒自动上传
+// 防抖云同步：数据变更后 5 秒自动上传
 let _cloudSyncTimer = null;
+let _cloudSyncing = false;
 function _autoCloudSync() {
   if (_cloudSyncTimer) clearTimeout(_cloudSyncTimer);
   _cloudSyncTimer = setTimeout(async () => {
@@ -1696,6 +1697,26 @@ function _autoCloudSync() {
       console.log('自动云同步失败:', e.message);
     }
   }, 5000);
+}
+
+// 立即执行云同步（页面切到后台时调用，清防抖立即执行）
+async function flushCloudSync() {
+  if (_cloudSyncTimer) {
+    clearTimeout(_cloudSyncTimer);
+    _cloudSyncTimer = null;
+  }
+  if (_cloudSyncing) return;
+  _cloudSyncing = true;
+  try {
+    const token = await getGitHubToken();
+    if (!token) return;
+    await cloudSync();
+    console.log('☁️ 立即云同步完成');
+  } catch (e) {
+    console.log('立即云同步失败:', e.message);
+  } finally {
+    _cloudSyncing = false;
+  }
 }
 
 export {
@@ -1720,6 +1741,7 @@ export {
   cloudRestore,
   cloudCheckExists,
   getCloudSyncInfo,
+  flushCloudSync,
   getSetting,
   setSetting,
   initSeedData,
