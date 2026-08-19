@@ -884,7 +884,7 @@ export default class InspirationPage {
               title: title || '未命名灵感',
               platform: platform,
               cover: coverInput || generatePlaceholderCover(platform, ''),
-              summary: document.getElementById('inspSummary').value.trim(),
+              description: document.getElementById('inspSummary').value.trim(),
               notes: document.getElementById('inspNotes').value.trim(),
               tags: tags,
               category: cat,
@@ -896,7 +896,7 @@ export default class InspirationPage {
               title: title || '未命名灵感',
               platform: platform,
               cover: coverInput || generatePlaceholderCover(platform, ''),
-              summary: document.getElementById('inspSummary').value.trim(),
+              description: document.getElementById('inspSummary').value.trim(),
               notes: '',
               type: '对话',
               duration: '',
@@ -906,10 +906,10 @@ export default class InspirationPage {
             await add('insights', {
               title: title || '未命名灵感',
               content: document.getElementById('inspSummary').value.trim() || document.getElementById('inspNotes').value.trim(),
-              sourceType: '灵感库',
+              sourceType: 'inspiration',
               sourceTitle: title || '未命名灵感',
               sourceUrl: url,
-              outputType: '灵感记录',
+              outputType: 'idea',
               tags: tags,
             });
           } else if (target.startsWith('life-')) {
