@@ -83,6 +83,8 @@ async function _autoBackup() {
     }
     _backupTimer = null;
   }, 5000);
+  // 同时触发云同步（30秒防抖）
+  _autoCloudSync();
 }
 
 // 添加记录
@@ -1548,6 +1550,133 @@ async function setSetting(key, value) {
   }
 }
 
+// === GitHub Gist 云同步 ===
+
+const GIST_FILENAME = 'shisi-cloud-backup.json';
+const GIST_SETTING_KEY = 'gist_id';
+
+// 云同步：上传加密数据到 GitHub Gist
+async function cloudSync() {
+  const token = await getSetting('github_token', '');
+  if (!token) throw new Error('请先在设置页配置 GitHub Token');
+
+  // 导出加密数据
+  const encrypted = await exportAll();
+  if (!encrypted) throw new Error('数据导出失败');
+
+  const gistId = await getSetting(GIST_SETTING_KEY, '');
+
+  const headers = {
+    'Authorization': `token ${token}`,
+    'Accept': 'application/vnd.github.v3+json',
+    'Content-Type': 'application/json',
+  };
+
+  const body = JSON.stringify({
+    description: '诗思工作台云端备份',
+    public: false,
+    files: {
+      [GIST_FILENAME]: {
+        content: typeof encrypted === 'string' ? encrypted : JSON.stringify(encrypted),
+      },
+    },
+  });
+
+  let res;
+  if (gistId) {
+    // 更新已有 Gist
+    res = await fetch(`https://api.github.com/gists/${gistId}`, {
+      method: 'PATCH', headers, body,
+    });
+  } else {
+    // 创建新 Gist
+    res = await fetch('https://api.github.com/gists', {
+      method: 'POST', headers, body,
+    });
+  }
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `同步失败 (${res.status})`);
+  }
+
+  const data = await res.json();
+  if (!gistId && data.id) {
+    await setSetting(GIST_SETTING_KEY, data.id);
+  }
+
+  await setSetting('last_cloud_sync', new Date().toISOString());
+  return data.id || gistId;
+}
+
+// 从 Gist 恢复
+async function cloudRestore() {
+  const token = await getSetting('github_token', '');
+  if (!token) throw new Error('请先在设置页配置 GitHub Token');
+
+  const gistId = await getSetting(GIST_SETTING_KEY, '');
+  if (!gistId) throw new Error('没有云端备份记录');
+
+  const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+    headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' },
+  });
+
+  if (!res.ok) throw new Error(`获取备份失败 (${res.status})`);
+
+  const data = await res.json();
+  const file = data.files?.[GIST_FILENAME];
+  if (!file || !file.content) throw new Error('云端备份为空');
+
+  const backupData = JSON.parse(file.content);
+  await importAll(backupData);
+  return true;
+}
+
+// 检查云端是否有备份（用于首次打开时自动恢复）
+async function cloudCheckExists() {
+  const token = await getSetting('github_token', '');
+  const gistId = await getSetting(GIST_SETTING_KEY, '');
+  if (!token || !gistId) return false;
+
+  try {
+    const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' },
+    });
+    return res.ok;
+  } catch (e) {
+    return false;
+  }
+}
+
+// 获取上次同步信息
+async function getCloudSyncInfo() {
+  const token = await getSetting('github_token', '');
+  const gistId = await getSetting(GIST_SETTING_KEY, '');
+  const lastSync = await getSetting('last_cloud_sync', '');
+  return {
+    configured: !!token,
+    hasGist: !!gistId,
+    lastSync: lastSync ? new Date(lastSync).toLocaleString('zh-CN') : '从未同步',
+  };
+}
+
+// 防抖云同步：数据变更后 30 秒自动上传
+let _cloudSyncTimer = null;
+function _autoCloudSync() {
+  if (_cloudSyncTimer) clearTimeout(_cloudSyncTimer);
+  _cloudSyncTimer = setTimeout(async () => {
+    _cloudSyncTimer = null;
+    try {
+      const token = await getSetting('github_token', '');
+      if (!token) return; // 未配置 token，跳过
+      await cloudSync();
+      console.log('☁️ 自动云同步完成');
+    } catch (e) {
+      console.log('自动云同步失败:', e.message);
+    }
+  }, 30000);
+}
+
 export {
   db,
   add,
@@ -1566,6 +1695,10 @@ export {
   importFromFile,
   listBackups,
   restoreBackup,
+  cloudSync,
+  cloudRestore,
+  cloudCheckExists,
+  getCloudSyncInfo,
   getSetting,
   setSetting,
   initSeedData,

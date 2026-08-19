@@ -595,6 +595,59 @@ async function init() {
   initThemeToggle();
   registerSW();
   preventZoom();
+  // 启动后检查是否需要从云端恢复（本地数据为空时）
+  checkCloudRestore();
+}
+
+// 检测本地数据是否为空，如果为空且配置了云同步，提示恢复
+async function checkCloudRestore() {
+  try {
+    const { count, cloudCheckExists } = await import('./db.js');
+    const todoCount = await count('todos');
+    const inspirationCount = await count('inspirations');
+    // 如果本地完全没有用户数据，检查云端
+    if (todoCount === 0 && inspirationCount === 0) {
+      const hasCloud = await cloudCheckExists();
+      if (hasCloud) {
+        const div = document.createElement('div');
+        div.className = 'modal-overlay active';
+        div.innerHTML = `
+          <div class="modal">
+            <div class="modal-header">
+              <div class="modal-title">☁️ 发现云端备份</div>
+            </div>
+            <div style="padding: var(--space-4);">
+              <div style="font-size: var(--font-base); color: var(--text-secondary); margin-bottom: var(--space-3); line-height: 1.6;">
+                检测到本地数据为空，但云端有备份数据。<br>
+                是否从云端恢复？
+              </div>
+              <div style="display: flex; gap: var(--space-2);">
+                <button class="btn btn-secondary" id="cloudSkipBtn" style="flex:1;">暂不恢复</button>
+                <button class="btn btn-primary" id="cloudYesBtn" style="flex:1;">☁️ 恢复</button>
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(div);
+        const close = () => div.remove();
+        document.getElementById('cloudSkipBtn').addEventListener('click', close);
+        document.getElementById('cloudYesBtn').addEventListener('click', async () => {
+          close();
+          const { cloudRestore } = await import('./db.js');
+          try {
+            window.showToast('⏳ 正在从云端恢复...');
+            await cloudRestore();
+            window.showToast('✅ 恢复成功');
+            setTimeout(() => location.reload(), 1500);
+          } catch (err) {
+            window.showToast('恢复失败: ' + err.message, 4000);
+          }
+        });
+      }
+    }
+  } catch (e) {
+    console.log('云恢复检查失败:', e);
+  }
 }
 
 if (document.readyState === 'loading') {

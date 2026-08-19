@@ -2,7 +2,7 @@
  * 设置页面
  */
 
-import { exportToFile, importFromFile, listBackups, restoreBackup, getSetting, setSetting } from '../db.js';
+import { exportToFile, importFromFile, listBackups, restoreBackup, cloudSync, cloudRestore, getCloudSyncInfo, getSetting, setSetting } from '../db.js';
 import { getStoredTheme, applyTheme, toggleTheme } from '../theme.js';
 import { setEncryptionKey, getEncryptionKey } from '../crypto.js';
 
@@ -115,6 +115,32 @@ export default class SettingsPage {
           </div>
         </div>
 
+        <!-- 云同步 -->
+        <div class="card-section">
+          <div class="card-section-title">☁️ 云同步备份</div>
+          <div class="setting-item" style="padding: 0; margin-bottom: var(--space-3);">
+            <div>
+              <div class="setting-label">GitHub Token</div>
+              <div class="setting-value" id="cloudSyncStatus">检查中...</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="configTokenBtn">🔑 配置</button>
+          </div>
+          <div class="setting-item" style="padding: 0; margin-bottom: var(--space-3);">
+            <div>
+              <div class="setting-label">立即同步</div>
+              <div class="setting-value">上传数据到 GitHub Gist（加密）</div>
+            </div>
+            <button class="btn btn-primary btn-sm" id="cloudSyncBtn">☁️ 同步</button>
+          </div>
+          <div class="setting-item" style="padding: 0; margin-bottom: var(--space-3);">
+            <div>
+              <div class="setting-label">从云端恢复</div>
+              <div class="setting-value">清除浏览器数据后可从此恢复</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="cloudRestoreBtn">📥 恢复</button>
+          </div>
+        </div>
+
         <!-- 安全设置 -->
         <div class="card">
           <div class="card-title mb-3">🔒 加密设置</div>
@@ -158,6 +184,79 @@ export default class SettingsPage {
   }
 
   bindEvents() {
+    // 云同步状态显示
+    this._updateCloudStatus();
+
+    // === 以下为原有事件绑定 ===
+
+    // 配置 GitHub Token
+    document.getElementById('configTokenBtn')?.addEventListener('click', async () => {
+      const currentToken = await getSetting('github_token', '');
+      const div = document.createElement('div');
+      div.className = 'modal-overlay active';
+      div.innerHTML = `
+        <div class="modal">
+          <div class="modal-header">
+            <div class="modal-title">🔑 配置 GitHub Token</div>
+            <button class="modal-close" id="tokenClose">✕</button>
+          </div>
+          <div style="padding: var(--space-3);">
+            <div style="font-size: var(--font-xs); color: var(--text-tertiary); margin-bottom: var(--space-3); line-height: 1.6;">
+              1. 访问 https://github.com/settings/tokens/new<br>
+              2. 勾选 <code>gist</code> 权限<br>
+              3. 生成 Token 并粘贴到下方<br>
+              <br>
+              Token 仅存储在本地 IndexedDB，不上传到任何服务器
+            </div>
+            <input class="form-input" id="tokenInput" type="password" placeholder="ghp_xxxxxxxx" value="${currentToken}" style="width:100%; margin-bottom: var(--space-3);">
+            <button class="btn btn-primary btn-block" id="tokenSave">保存</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(div);
+      const close = () => { div.remove(); this._updateCloudStatus(); };
+      document.getElementById('tokenClose').addEventListener('click', close);
+      div.addEventListener('click', e => { if (e.target === div) close(); });
+      document.getElementById('tokenSave').addEventListener('click', async () => {
+        const val = document.getElementById('tokenInput').value.trim();
+        await setSetting('github_token', val);
+        window.showToast(val ? '✅ Token 已保存' : 'Token 已清除');
+        close();
+      });
+    });
+
+    // 手动云同步
+    document.getElementById('cloudSyncBtn')?.addEventListener('click', async () => {
+      const btn = document.getElementById('cloudSyncBtn');
+      btn.textContent = '⏳ 同步中...';
+      btn.disabled = true;
+      try {
+        await cloudSync();
+        window.showToast('☁️ 云同步成功');
+      } catch (err) {
+        window.showToast('同步失败: ' + err.message, 4000);
+      }
+      btn.textContent = '☁️ 同步';
+      btn.disabled = false;
+      this._updateCloudStatus();
+    });
+
+    // 从云端恢复
+    document.getElementById('cloudRestoreBtn')?.addEventListener('click', async () => {
+      const btn = document.getElementById('cloudRestoreBtn');
+      btn.textContent = '⏳ 恢复中...';
+      btn.disabled = true;
+      try {
+        await cloudRestore();
+        window.showToast('✅ 已从云端恢复');
+        setTimeout(() => location.reload(), 1500);
+      } catch (err) {
+        window.showToast('恢复失败: ' + err.message, 4000);
+      }
+      btn.textContent = '📥 恢复';
+      btn.disabled = false;
+    });
+
     // 主题
     document.querySelectorAll('[data-theme]').forEach(el => {
       el.addEventListener('click', () => {
@@ -261,6 +360,26 @@ export default class SettingsPage {
       setEncryptionKey(key);
       window.showToast('✅ 密钥已保存');
     });
+  }
+
+  async _updateCloudStatus() {
+    const el = document.getElementById('cloudSyncStatus');
+    if (!el) return;
+    try {
+      const info = await getCloudSyncInfo();
+      if (!info.configured) {
+        el.textContent = '未配置 Token';
+        el.style.color = 'var(--text-tertiary)';
+      } else if (!info.hasGist) {
+        el.textContent = '已配置，尚未同步';
+        el.style.color = 'var(--text-secondary)';
+      } else {
+        el.textContent = `上次同步: ${info.lastSync}`;
+        el.style.color = 'var(--text-tertiary)';
+      }
+    } catch (e) {
+      el.textContent = '状态获取失败';
+    }
   }
 
   onDestroy() {}
