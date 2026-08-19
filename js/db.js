@@ -182,7 +182,7 @@ async function count(table, whereClause) {
 
 // 导出全部数据（AES 加密）
 async function exportAll() {
-  const tables = db.tables.map(t => t.name);
+  const tables = db.tables.map(t => t.name).filter(n => n !== '_backups');
   const data = {};
   for (const table of tables) {
     data[table] = await db.table(table).toArray();
@@ -196,8 +196,9 @@ async function importAll(fileData) {
   if (!data) {
     throw new Error('数据解密失败，请检查密钥是否正确');
   }
-  // 清空并恢复
+  // 清空并恢复（跳过 _backups 表）
   for (const tableName of Object.keys(data)) {
+    if (tableName === '_backups') continue;
     if (db.table(tableName)) {
       await db.table(tableName).clear();
       if (data[tableName].length > 0) {
@@ -1555,16 +1556,37 @@ async function setSetting(key, value) {
 const GIST_FILENAME = 'shisi-cloud-backup.json';
 const GIST_SETTING_KEY = 'gist_id';
 
+// 获取 GitHub Token（IndexedDB 优先，localStorage 兜底）
+async function getGitHubToken() {
+  const token = await getSetting('github_token', '');
+  if (token) return token;
+  return localStorage.getItem('shisi-github-token') || '';
+}
+
+// 获取 Gist ID（IndexedDB 优先，localStorage 兜底）
+async function getGistId() {
+  const id = await getSetting(GIST_SETTING_KEY, '');
+  if (id) return id;
+  return localStorage.getItem('shisi-gist-id') || '';
+}
+
 // 云同步：上传加密数据到 GitHub Gist
 async function cloudSync() {
-  const token = await getSetting('github_token', '');
+  const token = await getGitHubToken();
   if (!token) throw new Error('请先在设置页配置 GitHub Token');
 
   // 导出加密数据
   const encrypted = await exportAll();
-  if (!encrypted) throw new Error('数据导出失败');
+  if (!encrypted) throw new Error('数据导出失败，请检查加密密钥是否正确');
 
-  const gistId = await getSetting(GIST_SETTING_KEY, '');
+  const content = typeof encrypted === 'string' ? encrypted : JSON.stringify(encrypted);
+
+  // Gist 文件内容不能超过 1MB
+  if (content.length > 1000000) {
+    throw new Error('数据量过大（超过1MB），请清理不需要的数据后重试');
+  }
+
+  const gistId = await getGistId();
 
   const headers = {
     'Authorization': `token ${token}`,
@@ -1577,32 +1599,31 @@ async function cloudSync() {
     public: false,
     files: {
       [GIST_FILENAME]: {
-        content: typeof encrypted === 'string' ? encrypted : JSON.stringify(encrypted),
+        content: content,
       },
     },
   });
 
   let res;
   if (gistId) {
-    // 更新已有 Gist
     res = await fetch(`https://api.github.com/gists/${gistId}`, {
       method: 'PATCH', headers, body,
     });
   } else {
-    // 创建新 Gist
     res = await fetch('https://api.github.com/gists', {
       method: 'POST', headers, body,
     });
   }
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `同步失败 (${res.status})`);
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.message || `同步失败 (${res.status})`);
   }
 
   const data = await res.json();
   if (!gistId && data.id) {
     await setSetting(GIST_SETTING_KEY, data.id);
+    localStorage.setItem('shisi-gist-id', data.id);
   }
 
   await setSetting('last_cloud_sync', new Date().toISOString());
@@ -1611,10 +1632,10 @@ async function cloudSync() {
 
 // 从 Gist 恢复
 async function cloudRestore() {
-  const token = await getSetting('github_token', '');
+  const token = await getGitHubToken();
   if (!token) throw new Error('请先在设置页配置 GitHub Token');
 
-  const gistId = await getSetting(GIST_SETTING_KEY, '');
+  const gistId = await getGistId();
   if (!gistId) throw new Error('没有云端备份记录');
 
   const res = await fetch(`https://api.github.com/gists/${gistId}`, {
@@ -1634,8 +1655,8 @@ async function cloudRestore() {
 
 // 检查云端是否有备份（用于首次打开时自动恢复）
 async function cloudCheckExists() {
-  const token = await getSetting('github_token', '');
-  const gistId = await getSetting(GIST_SETTING_KEY, '');
+  const token = await getGitHubToken();
+  const gistId = await getGistId();
   if (!token || !gistId) return false;
 
   try {
@@ -1650,8 +1671,8 @@ async function cloudCheckExists() {
 
 // 获取上次同步信息
 async function getCloudSyncInfo() {
-  const token = await getSetting('github_token', '');
-  const gistId = await getSetting(GIST_SETTING_KEY, '');
+  const token = await getGitHubToken();
+  const gistId = await getGistId();
   const lastSync = await getSetting('last_cloud_sync', '');
   return {
     configured: !!token,

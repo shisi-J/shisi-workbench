@@ -220,6 +220,12 @@ export default class SettingsPage {
       document.getElementById('tokenSave').addEventListener('click', async () => {
         const val = document.getElementById('tokenInput').value.trim();
         await setSetting('github_token', val);
+        // 同时存到 localStorage，清除 IndexedDB 后仍可恢复
+        if (val) {
+          localStorage.setItem('shisi-github-token', val);
+        } else {
+          localStorage.removeItem('shisi-github-token');
+        }
         window.showToast(val ? '✅ Token 已保存' : 'Token 已清除');
         close();
       });
