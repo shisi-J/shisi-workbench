@@ -1617,10 +1617,37 @@ async function cloudSync() {
     res = await fetch(`https://api.github.com/gists/${gistId}`, {
       method: 'PATCH', headers, body,
     });
+    // 如果 Gist 已被删除（404），重新搜索并创建
+    if (res.status === 404) {
+      const found = await findCloudGist(token);
+      if (found) {
+        gistId = found;
+        await setSetting(GIST_SETTING_KEY, found);
+        localStorage.setItem('shisi-gist-id', found);
+        res = await fetch(`https://api.github.com/gists/${gistId}`, {
+          method: 'PATCH', headers, body,
+        });
+      } else {
+        res = await fetch('https://api.github.com/gists', {
+          method: 'POST', headers, body,
+        });
+      }
+    }
   } else {
-    res = await fetch('https://api.github.com/gists', {
-      method: 'POST', headers, body,
-    });
+    // 没有本地 Gist ID，先搜索是否已有备份
+    const found = await findCloudGist(token);
+    if (found) {
+      gistId = found;
+      await setSetting(GIST_SETTING_KEY, found);
+      localStorage.setItem('shisi-gist-id', found);
+      res = await fetch(`https://api.github.com/gists/${gistId}`, {
+        method: 'PATCH', headers, body,
+      });
+    } else {
+      res = await fetch('https://api.github.com/gists', {
+        method: 'POST', headers, body,
+      });
+    }
   }
 
   if (!res.ok) {
@@ -1643,8 +1670,19 @@ async function cloudRestore() {
   const token = await getGitHubToken();
   if (!token) throw new Error('请先在设置页配置 GitHub Token');
 
-  const gistId = await getGistId();
-  if (!gistId) throw new Error('没有云端备份记录');
+  let gistId = await getGistId();
+
+  // 没有本地 Gist ID，自动搜索已有的备份
+  if (!gistId) {
+    const found = await findCloudGist(token);
+    if (found) {
+      gistId = found;
+      await setSetting(GIST_SETTING_KEY, found);
+      localStorage.setItem('shisi-gist-id', found);
+    } else {
+      throw new Error('没有云端备份记录，请先在一端同步数据');
+    }
+  }
 
   const res = await fetch(`https://api.github.com/gists/${gistId}`, {
     headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' },
@@ -1661,20 +1699,51 @@ async function cloudRestore() {
   return true;
 }
 
+// 搜索用户 GitHub Gist 中已有的备份
+async function findCloudGist(token) {
+  try {
+    const res = await fetch('https://api.github.com/gists?per_page=100', {
+      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' },
+    });
+    if (!res.ok) return null;
+    const gists = await res.json();
+    for (const g of gists) {
+      if (g.files && g.files[GIST_FILENAME]) {
+        return g.id;
+      }
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
 // 检查云端是否有备份（用于首次打开时自动恢复）
 async function cloudCheckExists() {
   const token = await getGitHubToken();
-  const gistId = await getGistId();
-  if (!token || !gistId) return false;
+  if (!token) return false;
 
-  try {
-    const res = await fetch(`https://api.github.com/gists/${gistId}`, {
-      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' },
-    });
-    return res.ok;
-  } catch (e) {
-    return false;
+  // 先检查本地是否有 Gist ID
+  const gistId = await getGistId();
+  if (gistId) {
+    try {
+      const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+        headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' },
+      });
+      return res.ok;
+    } catch (e) {
+      return false;
+    }
   }
+
+  // 没有本地 Gist ID，搜索用户 Gist 列表
+  const found = await findCloudGist(token);
+  if (found) {
+    await setSetting(GIST_SETTING_KEY, found);
+    localStorage.setItem('shisi-gist-id', found);
+    return true;
+  }
+  return false;
 }
 
 // 获取上次同步信息
