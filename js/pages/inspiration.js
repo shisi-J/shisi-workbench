@@ -914,16 +914,20 @@ export default class InspirationPage {
             });
           } else if (target.startsWith('life-')) {
             const cat = target.replace('life-', '');
+            const videoPlatform = platform === 'bilibili' ? 'bilibili'
+              : platform === 'douyin' ? 'douyin'
+              : platform === 'xhs' ? 'xhs'
+              : 'none';
             await add('lifeRecords', {
-              url: url,
               title: title || '未命名灵感',
-              platform: platform,
-              cover: coverInput || generatePlaceholderCover(platform, ''),
-              summary: document.getElementById('inspSummary').value.trim(),
-              notes: document.getElementById('inspNotes').value.trim(),
-              tags: tags,
+              fields: {
+                title: title || '未命名灵感',
+                videoUrl: url,
+                videoPlatform,
+                trainType: '跟练视频',
+                remark: document.getElementById('inspSummary').value.trim(),
+              },
               category: cat,
-              createdAt: new Date().toISOString(),
             });
           }
         } catch (e) {}

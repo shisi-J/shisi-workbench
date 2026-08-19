@@ -17,21 +17,7 @@ export default class SettingsPage {
     const aiUrl = localStorage.getItem('shisi-ai-url') || 'https://api.chatanywhere.tech/v1/chat/completions';
     const aiModel = localStorage.getItem('shisi-ai-model') || 'gpt-3.5-turbo';
     const encKey = getEncryptionKey();
-
-    // 读取 SW 缓存版本号作为应用版本
-    let appVersion = '1.0.0';
-    if ('serviceWorker' in navigator) {
-      try {
-        const reg = await navigator.serviceWorker.getRegistration();
-        if (reg) {
-          const cacheNames = await caches.keys();
-          const shisiCache = cacheNames.find(k => k.startsWith('shisi-v'));
-          if (shisiCache) {
-            appVersion = shisiCache.replace('shisi-v', '').replace(/-(static|runtime)$/, '');
-          }
-        }
-      } catch (e) {}
-    }
+    const appVersion = '1.9.11';
 
     this.container.innerHTML = `
       <div class="settings-page">
