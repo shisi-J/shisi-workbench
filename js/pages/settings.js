@@ -2,7 +2,7 @@
  * 设置页面
  */
 
-import { exportToFile, importFromFile, listBackups, restoreBackup, cloudSync, cloudRestore, getCloudSyncInfo, getSetting, setSetting } from '../db.js';
+import { exportToFile, importFromFile, listBackups, restoreBackup, cloudSync, cloudRestore, getCloudSyncInfo, getSetting, setSetting, validateGitHubToken } from '../db.js';
 import { getStoredTheme, applyTheme, toggleTheme } from '../theme.js';
 import { setEncryptionKey, getEncryptionKey } from '../crypto.js';
 
@@ -17,7 +17,13 @@ export default class SettingsPage {
     const aiUrl = localStorage.getItem('shisi-ai-url') || 'https://api.chatanywhere.tech/v1/chat/completions';
     const aiModel = localStorage.getItem('shisi-ai-model') || 'gpt-3.5-turbo';
     const encKey = getEncryptionKey();
-    const appVersion = '1.9.18';
+    let appVersion = '1.0.0';
+    try {
+      const res = await fetch('sw.js', { cache: 'no-store' });
+      const text = await res.text();
+      const m = text.match(/shisi-v(\d+\.\d+\.\d+)/);
+      if (m) appVersion = m[1];
+    } catch (e) {}
 
     this.container.innerHTML = `
       <div class="settings-page">
@@ -124,7 +130,10 @@ export default class SettingsPage {
               <div class="setting-label">GitHub Token</div>
               <div class="setting-value" id="cloudSyncStatus">检查中...</div>
             </div>
-            <button class="btn btn-secondary btn-sm" id="configTokenBtn">🔑 配置</button>
+            <div style="display: flex; gap: var(--space-1);">
+              <button class="btn btn-secondary btn-sm" id="validateTokenBtn" style="font-size: var(--font-xs); padding: 4px 8px;">验证</button>
+              <button class="btn btn-secondary btn-sm" id="configTokenBtn">🔑 配置</button>
+            </div>
           </div>
           <div class="setting-item" style="padding: 0; margin-bottom: var(--space-3);">
             <div>
@@ -232,6 +241,21 @@ export default class SettingsPage {
       });
     });
 
+    // 验证 GitHub Token
+    document.getElementById('validateTokenBtn')?.addEventListener('click', async () => {
+      const btn = document.getElementById('validateTokenBtn');
+      btn.textContent = '⏳';
+      btn.disabled = true;
+      try {
+        const result = await validateGitHubToken();
+        window.showToast(result.message, 4000);
+      } catch (e) {
+        window.showToast('验证失败: ' + e.message, 4000);
+      }
+      btn.textContent = '验证';
+      btn.disabled = false;
+    });
+
     // 手动云同步
     document.getElementById('cloudSyncBtn')?.addEventListener('click', async () => {
       const btn = document.getElementById('cloudSyncBtn');
@@ -241,7 +265,13 @@ export default class SettingsPage {
         await cloudSync();
         window.showToast('☁️ 云同步成功');
       } catch (err) {
-        window.showToast('同步失败: ' + err.message, 4000);
+        if (err.message.includes('无效或已过期')) {
+          window.showToast('Token 已失效，请点击「配置」重新生成 Token', 5000);
+        } else if (err.message.includes('限流')) {
+          window.showToast('GitHub API 限流，请稍后重试', 4000);
+        } else {
+          window.showToast('同步失败: ' + err.message, 4000);
+        }
       }
       btn.textContent = '☁️ 同步';
       btn.disabled = false;

@@ -75,6 +75,46 @@ export default class FitnessPage {
     return filtered;
   }
 
+  // 获取训练记录的日期（优先 recordDate，回退 createdAt）
+  getTrainDate(r) {
+    return r.fields?.recordDate || r.createdAt?.slice(0, 10) || '';
+  }
+
+  // 今日是否已打卡
+  isCheckedInToday() {
+    const todayStr = localDateStr(new Date());
+    return this.getTrainRecords().some(r => this.getTrainDate(r) === todayStr);
+  }
+
+  // 连续打卡天数（从今天往回数）
+  getStreak() {
+    const records = this.getTrainRecords();
+    if (records.length === 0) return 0;
+    const dates = new Set(records.map(r => this.getTrainDate(r)).filter(Boolean));
+    let streak = 0;
+    const check = new Date();
+    // 如果今天没打卡但昨天打了，从昨天开始算
+    if (!dates.has(localDateStr(check))) {
+      check.setDate(check.getDate() - 1);
+      if (!dates.has(localDateStr(check))) return 0;
+    }
+    while (dates.has(localDateStr(check))) {
+      streak++;
+      check.setDate(check.getDate() - 1);
+    }
+    return streak;
+  }
+
+  // 本周训练次数（周日起算）
+  getThisWeekCount() {
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+    const weekStartStr = localDateStr(weekStart);
+    return this.getTrainRecords().filter(r => this.getTrainDate(r) >= weekStartStr).length;
+  }
+
   // 日期 -> 体重数据 映射
   getDayWeightMap() {
     const map = {};
@@ -121,7 +161,7 @@ export default class FitnessPage {
       <div class="life-fitness-page" style="padding: var(--space-3);">
         <div class="page-header">
           <div class="page-title">💪 健身 · 训练台账</div>
-          <div class="page-subtitle">体重管理 + 训练打卡 · ${weights.length} 天记录 · ${this.getTrainRecords().length} 次训练</div>
+          <div class="page-subtitle">体重管理 + 训练打卡 · ${weights.length} 天体重 · ${this.getTrainRecords().length} 次训练${this.getStreak() > 0 ? ` · 🔥连续${this.getStreak()}天` : ''}</div>
         </div>
 
         <!-- Tab 切换：体重管理在前 -->
@@ -139,21 +179,45 @@ export default class FitnessPage {
 
   renderTrainView(filtered) {
     const allTrain = this.getTrainRecords();
-    const completedCount = allTrain.filter(r => r.fields?.done !== 'false').length;
+    const checkedToday = this.isCheckedInToday();
+    const streak = this.getStreak();
+    const weekCount = this.getThisWeekCount();
 
     return `
+      <!-- 今日打卡状态卡 -->
+      <div style="background: ${checkedToday ? 'linear-gradient(135deg, rgba(6,214,160,0.12), rgba(6,214,160,0.03))' : 'linear-gradient(135deg, rgba(255,184,0,0.1), rgba(255,184,0,0.02))'}; border: 1px solid ${checkedToday ? 'rgba(6,214,160,0.3)' : 'rgba(255,184,0,0.25)'}; border-radius: var(--radius-md); padding: var(--space-3); margin-bottom: var(--space-3); display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <div style="font-size: var(--font-xs); color: var(--text-tertiary); margin-bottom: 2px;">今日训练</div>
+          <div style="font-size: var(--font-lg); font-weight: var(--weight-bold); color: ${checkedToday ? '#06D6A0' : 'var(--text-primary)'};">
+            ${checkedToday ? '✅ 已打卡' : '⏳ 未打卡'}
+          </div>
+          ${streak > 0 ? `<div style="font-size: var(--font-xs); color: var(--text-tertiary); margin-top: 2px;">🔥 连续 ${streak} 天</div>` : ''}
+        </div>
+        ${checkedToday
+          ? `<div style="font-size: 32px;">💪</div>`
+          : `<button id="quickCheckinBtn" style="padding: 8px 18px; background: var(--brand); color: #fff; border: none; border-radius: var(--radius-sm); font-size: var(--font-sm); font-weight: var(--weight-semibold); cursor: pointer; white-space: nowrap;">立即打卡</button>`
+        }
+      </div>
+
       ${allTrain.length > 0 ? `
         <div class="stats-grid">
           <div class="stat-card gradient">
             <div class="stat-icon">🏋️</div>
-            <div class="stat-label">总训练次数</div>
+            <div class="stat-label">总训练</div>
             <div class="stat-value">${allTrain.length}</div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon">✅</div>
-            <div class="stat-label">已完成打卡</div>
-            <div class="stat-value">${completedCount}</div>
+            <div class="stat-icon">📅</div>
+            <div class="stat-label">本周</div>
+            <div class="stat-value">${weekCount}</div>
           </div>
+          ${streak > 0 ? `
+            <div class="stat-card">
+              <div class="stat-icon">🔥</div>
+              <div class="stat-label">连续天数</div>
+              <div class="stat-value">${streak}</div>
+            </div>
+          ` : ''}
         </div>
       ` : ''}
 
@@ -166,7 +230,7 @@ export default class FitnessPage {
         ${filtered.length === 0 ? `
           <div class="empty-state">
             <div class="empty-icon">💪</div>
-            <div class="empty-text">${allTrain.length === 0 ? '还没有训练记录<br>点击 + 记录训练或粘贴跟练视频' : '没有匹配的训练记录'}</div>
+            <div class="empty-text">${allTrain.length === 0 ? '还没有训练记录<br>点击「立即打卡」或 + 记录训练' : '没有匹配的训练记录'}</div>
           </div>
         ` : filtered.map(r => this.renderTrainCard(r)).join('')}
       </div>
@@ -299,7 +363,9 @@ export default class FitnessPage {
 
   renderTrainCard(r) {
     const f = r.fields || {};
-    const date = r.createdAt?.slice(0, 10) || '';
+    const date = this.getTrainDate(r);
+    const todayStr = localDateStr(new Date());
+    const isToday = date === todayStr;
     const platformLabel = VIDEO_PLATFORMS[f.videoPlatform] || '';
     const typeTag = f.trainType ? `<span class="tag">${f.trainType}</span>` : '';
 
@@ -316,7 +382,7 @@ export default class FitnessPage {
           ${f.trainType ? `<span style="margin-right: var(--space-2);">${typeTag}</span>` : ''}
           ${f.duration ? `<span style="margin-right: var(--space-2);">⏱️ ${f.duration}分钟</span>` : ''}
           ${f.calories ? `<span style="margin-right: var(--space-2);">🔥 ${f.calories}kcal</span>` : ''}
-          ${date}
+          ${isToday ? '<span style="color: #06D6A0; font-weight: var(--weight-semibold);">今日打卡</span>' : `📅 ${date}`}
         </div>
         ${f.videoUrl ? `
           <div style="margin-top: var(--space-2); padding: var(--space-2); background: var(--bg-inset); border-radius: var(--radius-xs);">
@@ -456,6 +522,11 @@ export default class FitnessPage {
       }
     });
 
+    // 快速打卡按钮
+    document.getElementById('quickCheckinBtn')?.addEventListener('click', () => {
+      this.showTrainFormModal();
+    });
+
     bindCardAttachmentClicks(this.records);
   }
 
@@ -473,14 +544,19 @@ export default class FitnessPage {
   showTrainFormModal(record = null) {
     const isEdit = !!record;
     const f = record?.fields || {};
+    const today = localDateStr(new Date());
 
     const modal = document.createElement('div');
     modal.className = 'modal-overlay active';
     modal.innerHTML = `
       <div class="modal" style="max-height: 85vh; overflow-y: auto;">
         <div class="modal-header">
-          <div class="modal-title">${isEdit ? '编辑训练' : '添加训练'}</div>
+          <div class="modal-title">${isEdit ? '编辑训练' : '🏋️ 训练打卡'}</div>
           <button class="modal-close" id="modalClose">✕</button>
+        </div>
+        <div class="form-group">
+          <label class="form-label">训练日期</label>
+          <input type="date" class="form-input" id="field_recordDate" value="${f.recordDate || today}" max="${today}">
         </div>
         <div class="form-group">
           <label class="form-label">训练标题</label>
@@ -512,7 +588,7 @@ export default class FitnessPage {
           <textarea class="form-textarea" id="field_remark" placeholder="训练感受、重量组数等">${f.remark || ''}</textarea>
         </div>
         ${renderUploadField(f.attachments || [])}
-        <button class="btn btn-primary btn-block" id="saveRecord">保存</button>
+        <button class="btn btn-primary btn-block" id="saveRecord">${isEdit ? '保存' : '✅ 打卡'}</button>
       </div>
     `;
     document.body.appendChild(modal);
@@ -524,7 +600,7 @@ export default class FitnessPage {
 
     document.getElementById('saveRecord').addEventListener('click', async () => {
       const fields = {};
-      ['title', 'trainType', 'duration', 'calories', 'videoUrl', 'remark'].forEach(k => {
+      ['recordDate', 'title', 'trainType', 'duration', 'calories', 'videoUrl', 'remark'].forEach(k => {
         fields[k] = document.getElementById(`field_${k}`).value.trim();
       });
       const url = (fields.videoUrl || '').toLowerCase();
@@ -532,9 +608,8 @@ export default class FitnessPage {
       else if (url.includes('douyin')) fields.videoPlatform = 'douyin';
       else if (url.includes('xiaohongshu') || url.includes('xhslink')) fields.videoPlatform = 'xhs';
       else fields.videoPlatform = 'none';
-      fields.done = 'true';
 
-      const title = fields.title || '训练记录';
+      const title = fields.title || `训练打卡 ${fields.recordDate}`;
       fields.attachments = getAttachments();
       if (isEdit) {
         await update('lifeRecords', record.id, { title, fields });
@@ -597,8 +672,14 @@ export default class FitnessPage {
           <div class="form-group">
             <label class="form-label">今日状态</label>
             <div style="display: flex; gap: var(--space-2); align-items: center; height: 44px;">
-              <label style="font-size: var(--font-sm);"><input type="checkbox" id="field_cheatMeal" ${f.cheatMeal === 'true' ? 'checked' : ''} style="width:auto;margin-right:4px;">🍔 欺骗餐</label>
-              <label style="font-size: var(--font-sm);"><input type="checkbox" id="field_period" ${f.period === 'true' ? 'checked' : ''} style="width:auto;margin-right:4px;">🌸 生理期</label>
+              <div class="fit-toggle" data-field="cheatMeal" data-checked="${f.cheatMeal === 'true' ? '1' : '0'}" style="font-size: var(--font-sm); display:flex; align-items:center; gap:4px; cursor:pointer;">
+                <span class="fit-box" style="width:18px;height:18px;border:2px solid ${f.cheatMeal === 'true' ? 'var(--brand)' : 'var(--border-color)'};border-radius:4px;background:${f.cheatMeal === 'true' ? 'var(--brand)' : 'transparent'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;flex-shrink:0;">${f.cheatMeal === 'true' ? '✓' : ''}</span>
+                🍔 欺骗餐
+              </div>
+              <div class="fit-toggle" data-field="period" data-checked="${f.period === 'true' ? '1' : '0'}" style="font-size: var(--font-sm); display:flex; align-items:center; gap:4px; cursor:pointer;">
+                <span class="fit-box" style="width:18px;height:18px;border:2px solid ${f.period === 'true' ? 'var(--brand)' : 'var(--border-color)'};border-radius:4px;background:${f.period === 'true' ? 'var(--brand)' : 'transparent'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;flex-shrink:0;">${f.period === 'true' ? '✓' : ''}</span>
+                🌸 生理期
+              </div>
             </div>
           </div>
         </div>
@@ -617,6 +698,26 @@ export default class FitnessPage {
     document.getElementById('modalClose').addEventListener('click', close);
     modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
 
+    // 自定义toggle切换（不用原生checkbox）
+    modal.querySelectorAll('.fit-toggle').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const box = el.querySelector('.fit-box');
+        const isChecked = el.dataset.checked === '1';
+        const newState = !isChecked;
+        el.dataset.checked = newState ? '1' : '0';
+        if (newState) {
+          box.style.background = 'var(--brand)';
+          box.style.borderColor = 'var(--brand)';
+          box.textContent = '✓';
+        } else {
+          box.style.background = 'transparent';
+          box.style.borderColor = 'var(--border-color)';
+          box.textContent = '';
+        }
+      });
+    });
+
     document.getElementById('saveRecord').addEventListener('click', async () => {
       const fields = {};
       fields.recordDate = document.getElementById('field_recordDate').value.trim() || today;
@@ -625,8 +726,8 @@ export default class FitnessPage {
       fields.bodyFat = document.getElementById('field_bodyFat').value.trim();
       fields.waist = document.getElementById('field_waist').value.trim();
       fields.remark = document.getElementById('field_remark').value.trim();
-      fields.cheatMeal = document.getElementById('field_cheatMeal').checked ? 'true' : 'false';
-      fields.period = document.getElementById('field_period').checked ? 'true' : 'false';
+      fields.cheatMeal = modal.querySelector('[data-field="cheatMeal"]')?.dataset.checked === '1' ? 'true' : 'false';
+      fields.period = modal.querySelector('[data-field="period"]')?.dataset.checked === '1' ? 'true' : 'false';
 
       // 至少要有一个体重值
       if (!fields.morningWeight && !fields.eveningWeight) {

@@ -706,6 +706,20 @@ export default class LearnPage {
       if (e.target.classList.contains('chapter-remove')) {
         e.target.closest('.chapter-input-row').remove();
       }
+      if (e.target.classList.contains('chapter-toggle')) {
+        const isChecked = e.target.dataset.checked === '1';
+        const newState = !isChecked;
+        e.target.dataset.checked = newState ? '1' : '0';
+        if (newState) {
+          e.target.style.background = 'var(--brand)';
+          e.target.style.borderColor = 'var(--brand)';
+          e.target.textContent = '✓';
+        } else {
+          e.target.style.background = 'transparent';
+          e.target.style.borderColor = 'var(--border-color)';
+          e.target.textContent = '';
+        }
+      }
     });
 
     // 文件上传
@@ -772,10 +786,10 @@ export default class LearnPage {
       // 收集章节
       const chapterInputs = modal.querySelectorAll('.chapter-input');
       const newChapters = Array.from(chapterInputs).map((input, i) => {
-        const checkbox = input.closest('.chapter-input-row')?.querySelector('.chapter-input-check');
+        const toggle = input.closest('.chapter-input-row')?.querySelector('.chapter-toggle');
         return {
           title: input.value.trim(),
-          done: checkbox ? checkbox.checked : false,
+          done: toggle ? toggle.dataset.checked === '1' : false,
         };
       }).filter(c => c.title);
 
@@ -867,9 +881,7 @@ export default class LearnPage {
   renderChapterInput(index, title, done) {
     return `
       <div class="chapter-input-row" style="display: flex; gap: var(--space-1); align-items: center;">
-        <label style="display: flex; align-items: center; gap: 4px; font-size: var(--font-xs); color: var(--text-tertiary); flex-shrink: 0;">
-          <input type="checkbox" class="chapter-input-check" ${done ? 'checked' : ''} style="width: 16px; height: 16px;">
-        </label>
+        <div class="chapter-toggle" data-checked="${done ? '1' : '0'}" style="flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; border: 2px solid ${done ? 'var(--brand)' : 'var(--border-color)'}; border-radius: 4px; background: ${done ? 'var(--brand)' : 'transparent'}; color: #fff; font-size: 12px; flex-shrink: 0;">${done ? '✓' : ''}</div>
         <input type="text" class="form-input chapter-input" placeholder="第 ${index + 1} 章标题" value="${title}" style="flex: 1;">
         ${index > 0 ? '<button class="chapter-remove" style="background: none; border: none; color: var(--danger); font-size: 18px; padding: 4px 8px; cursor: pointer;">✕</button>' : ''}
       </div>

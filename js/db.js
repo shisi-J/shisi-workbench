@@ -1745,22 +1745,38 @@ async function cloudRestore() {
 
 // 搜索用户 GitHub Gist 中所有包含备份文件的 Gist
 async function findAllCloudGists(token) {
-  try {
-    const res = await fetch('https://api.github.com/gists?per_page=100', {
-      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' },
-    });
-    if (!res.ok) return [];
-    const gists = await res.json();
-    const result = [];
-    for (const g of gists) {
-      if (g.files && g.files[GIST_FILENAME]) {
-        result.push({ id: g.id, updatedAt: g.updated_at || g.created_at });
-      }
-    }
-    return result;
-  } catch (e) {
-    return [];
+  const res = await fetch('https://api.github.com/gists?per_page=100', {
+    headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' },
+  });
+  if (!res.ok) {
+    if (res.status === 401) throw new Error('GitHub Token 无效或已过期，请重新配置');
+    if (res.status === 403) throw new Error('GitHub API 限流，请稍后重试');
+    throw new Error(`GitHub API 错误 (${res.status})`);
   }
+  const gists = await res.json();
+  const result = [];
+  for (const g of gists) {
+    if (g.files && g.files[GIST_FILENAME]) {
+      result.push({ id: g.id, updatedAt: g.updated_at || g.created_at });
+    }
+  }
+  return result;
+}
+
+// 验证 GitHub Token 是否有效
+async function validateGitHubToken() {
+  const token = await getGitHubToken();
+  if (!token) return { valid: false, message: '未配置 Token' };
+  const res = await fetch('https://api.github.com/user', {
+    headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' },
+  });
+  if (res.ok) {
+    const user = await res.json();
+    return { valid: true, message: `Token 有效（账号: ${user.login}）` };
+  }
+  if (res.status === 401) return { valid: false, message: 'Token 无效或已过期，请重新生成' };
+  if (res.status === 403) return { valid: false, message: 'API 限流，请稍后重试' };
+  return { valid: false, message: `验证失败 (${res.status})` };
 }
 
 // 检查云端是否有备份（用于首次打开时自动恢复）
@@ -1853,6 +1869,7 @@ export {
   getCloudSyncInfo,
   flushCloudSync,
   getGitHubToken,
+  validateGitHubToken,
   getSetting,
   setSetting,
   initSeedData,

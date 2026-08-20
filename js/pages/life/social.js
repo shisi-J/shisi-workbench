@@ -458,9 +458,32 @@ export default class SocialPage {
     // 礼尚往来的送出/收到切换
     if (this.activeTab === 'gift') {
       modal.querySelectorAll('.direction-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          modal.querySelectorAll('.direction-btn').forEach(b => b.classList.remove('active'));
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          modal.querySelectorAll('.direction-btn').forEach(b => {
+            b.classList.remove('active');
+            const dir = b.dataset.dir;
+            if (dir === '送出') {
+              b.style.background = 'var(--bg-inset)';
+              b.style.color = 'var(--text-tertiary)';
+              b.style.borderColor = 'var(--border-color)';
+            } else {
+              b.style.background = 'var(--bg-inset)';
+              b.style.color = 'var(--text-tertiary)';
+              b.style.borderColor = 'var(--border-color)';
+            }
+          });
           btn.classList.add('active');
+          const dir = btn.dataset.dir;
+          if (dir === '送出') {
+            btn.style.background = 'rgba(239,71,111,0.1)';
+            btn.style.color = '#EF476F';
+            btn.style.borderColor = '#EF476F';
+          } else {
+            btn.style.background = 'rgba(6,214,160,0.1)';
+            btn.style.color = '#06D6A0';
+            btn.style.borderColor = '#06D6A0';
+          }
         });
       });
     }

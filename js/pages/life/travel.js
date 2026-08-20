@@ -210,10 +210,10 @@ export default class TravelPage {
           <label class="form-label">🎒 出行打包清单</label>
           <div id="packingList" style="display: flex; flex-direction: column; gap: 4px; max-height: 200px; overflow-y: auto; padding: var(--space-2); background: var(--bg-inset); border-radius: var(--radius-xs);">
             ${packing.map((p, i) => `
-              <label style="font-size: var(--font-sm); display: flex; align-items: center; gap: 4px;">
-                <input type="checkbox" data-pack-idx="${i}" ${p.done ? 'checked' : ''} style="width:auto;">
-                ${p.item}
-              </label>
+              <div class="pack-toggle" data-pack-idx="${i}" data-checked="${p.done ? '1' : '0'}" style="font-size: var(--font-sm); display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 2px 0;">
+                <span class="pack-box" style="width:18px;height:18px;border:2px solid ${p.done ? 'var(--brand)' : 'var(--border-color)'};border-radius:4px;background:${p.done ? 'var(--brand)' : 'transparent'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;flex-shrink:0;">${p.done ? '✓' : ''}</span>
+                <span>${p.item}</span>
+              </div>
             `).join('')}
           </div>
         </div>
@@ -233,6 +233,26 @@ export default class TravelPage {
     document.getElementById('modalClose').addEventListener('click', close);
     modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
 
+    // 打包清单切换（自定义toggle，不用原生checkbox）
+    modal.querySelectorAll('.pack-toggle').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const box = el.querySelector('.pack-box');
+        const isChecked = el.dataset.checked === '1';
+        const newState = !isChecked;
+        el.dataset.checked = newState ? '1' : '0';
+        if (newState) {
+          box.style.background = 'var(--brand)';
+          box.style.borderColor = 'var(--brand)';
+          box.textContent = '✓';
+        } else {
+          box.style.background = 'transparent';
+          box.style.borderColor = 'var(--border-color)';
+          box.textContent = '';
+        }
+      });
+    });
+
     document.getElementById('saveRecord').addEventListener('click', async () => {
       const fields = {};
       ['title', 'destination', 'status', 'startDate', 'endDate', 'budget', 'guideUrl', 'remark'].forEach(k => {
@@ -242,7 +262,7 @@ export default class TravelPage {
       // 收集打包清单状态
       const updatedPacking = packing.map((p, i) => ({
         item: p.item,
-        done: document.querySelector(`[data-pack-idx="${i}"]`)?.checked || false,
+        done: document.querySelector(`[data-pack-idx="${i}"]`)?.dataset.checked === '1',
       }));
       fields.packing = JSON.stringify(updatedPacking);
 

@@ -664,7 +664,7 @@
   color: var(--text-primary);
   font-size: var(--font-sm);
   line-height: var(--leading-normal);
-  resize: vertical;
+  resize: none;
   font-family: inherit;
 }
 
