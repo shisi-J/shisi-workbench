@@ -123,8 +123,8 @@ export default class SettingsPage {
         </div>
 
         <!-- 云同步 -->
-        <div class="card-section">
-          <div class="card-section-title">☁️ 云同步备份</div>
+        <div class="card" style="padding: var(--space-3); margin-bottom: var(--space-3);">
+          <div class="card-title" style="margin-bottom: var(--space-3);">☁️ 云同步备份</div>
           <div class="setting-item" style="padding: 0; margin-bottom: var(--space-3);">
             <div>
               <div class="setting-label">GitHub Token</div>
@@ -138,7 +138,7 @@ export default class SettingsPage {
           <div class="setting-item" style="padding: 0; margin-bottom: var(--space-3);">
             <div>
               <div class="setting-label">立即同步</div>
-              <div class="setting-value">上传数据到 GitHub Gist（加密）</div>
+              <div class="setting-value">上传数据到 GitHub Gist（私有）</div>
             </div>
             <button class="btn btn-primary btn-sm" id="cloudSyncBtn">☁️ 同步</button>
           </div>

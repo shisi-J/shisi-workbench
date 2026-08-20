@@ -290,6 +290,9 @@ export default class HomePage {
       if (el) {
         el.innerHTML = this.weather ? this.renderWeather() : '';
       }
+    }).catch(() => {
+      const el = document.getElementById('weatherSlot');
+      if (el) el.innerHTML = '<span style="font-size:var(--font-xs);color:var(--text-tertiary);">天气获取失败</span>';
     });
   }
 

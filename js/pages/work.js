@@ -185,7 +185,8 @@ export default class WorkPage {
     const keyFields = this.config.fields.slice(0, 4).filter(f => f.key !== 'remark' && fields[f.key]);
     const infoItems = keyFields.map(f => {
       let val = fields[f.key];
-      if (f.type === 'number' && val) val = `¥${val}`;
+      const currencyKeys = ['budget', 'unitPrice', 'totalAmount', 'amount', 'baseAmount', 'companyPart', 'personalPart'];
+      if (f.type === 'number' && val && currencyKeys.includes(f.key)) val = `¥${val}`;
       if (f.type === 'date' && val) val = val.slice(0, 10);
       return `<span style="font-size: var(--font-sm); color: var(--text-tertiary);">${f.label}: ${val}</span>`;
     }).join(' · ');

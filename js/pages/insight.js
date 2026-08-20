@@ -284,16 +284,16 @@ export default class InsightPage {
       const content = document.getElementById('insightContent').value.trim();
       if (!content) { window.showToast('请输入内容'); return; }
       const mood = document.getElementById('insightMood').value;
-      const tags = document.getElementById('insightTags').value.split(',').map(t => t.trim()).filter(Boolean);
+      const tags = document.getElementById('insightTags').value.split(/[,，]/).map(t => t.trim()).filter(Boolean);
       const sourceType = document.getElementById('insightSource').value;
       const outputType = document.getElementById('insightOutput').value;
       const sourceTitle = document.getElementById('insightSourceTitle').value.trim();
       const sourceUrl = document.getElementById('insightSourceUrl').value.trim();
 
       const attachments = getAttachments();
-      const data = { title, content, mood, tags, sourceType, outputType, sourceTitle, sourceUrl, attachments };
+      const data = { content, mood, tags, sourceType, outputType, sourceTitle, sourceUrl, attachments };
       if (isEdit) {
-        await update('insights', insight.id, data);
+        await update('insights', insight.id, { title: title || '无标题', ...data });
       } else {
         await add('insights', { title: title || '无标题', ...data });
       }

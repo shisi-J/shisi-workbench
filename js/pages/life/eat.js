@@ -130,7 +130,7 @@ export default class EatPage {
           </div>
         </div>
         <div class="card-body" style="font-size: var(--font-sm);">
-          ${f.cookType ? `<span style="margin-right: var(--space-2);"> ${f.cookType}</span>` : ''}
+          ${f.city ? `<span style="margin-right: var(--space-2);">🍳 ${f.city}</span>` : ''}
           ${stars ? `<span style="margin-right: var(--space-2);">${stars}</span>` : ''}
           ${date}
         </div>
@@ -353,6 +353,11 @@ export default class EatPage {
         modal.querySelector('#field_city').placeholder = isCookNow ? '如：家常菜/中餐/西餐' : '如：杭州·西湖区';
         modal.querySelector('#field_url').placeholder = isCookNow ? 'B站/抖音/小红书教程链接' : '美团/大众点评/小红书链接';
         modal.querySelector('#field_review').placeholder = isCookNow ? '食材、步骤、 tips...' : '好吃吗？环境如何？值不值？';
+        const labels = modal.querySelectorAll('.form-label');
+        if (labels[0]) labels[0].textContent = isCookNow ? '菜名' : '店名';
+        if (labels[1]) labels[1].textContent = isCookNow ? '菜系类型' : '城市地区';
+        if (labels[4]) labels[4].textContent = isCookNow ? '视频/教程链接' : '探店外链';
+        if (labels[5]) labels[5].textContent = isCookNow ? '食谱/做法备注' : '评价';
       });
     });
 

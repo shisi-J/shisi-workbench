@@ -53,7 +53,7 @@ export default class LifeFinancePage {
 
   getHTML() {
     const now = new Date();
-    const monthStr = now.toISOString().slice(0, 7);
+    const monthStr = localDateStr(now).slice(0, 7);
     const monthRecords = this.records.filter(r => r.createdAt?.startsWith(monthStr));
 
     let monthIncome = 0, monthExpense = 0, monthInvest = 0;

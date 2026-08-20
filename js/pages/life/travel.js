@@ -82,7 +82,7 @@ export default class TravelPage {
     const statusTag = f.status ? `<span class="tag" style="background: ${statusColor}; color: white;">${f.status}</span>` : '';
 
     // 打包进度
-    const packing = f.packing ? JSON.parse(f.packing) : null;
+    const packing = (() => { try { return f.packing ? JSON.parse(f.packing) : null; } catch { return null; } })();
     let packingProgress = '';
     if (packing && Array.isArray(packing)) {
       const done = packing.filter(p => p.done).length;
@@ -159,7 +159,7 @@ export default class TravelPage {
   showFormModal(record = null) {
     const isEdit = !!record;
     const f = record?.fields || {};
-    const packing = f.packing ? JSON.parse(f.packing) : PACKING_TEMPLATE.map(item => ({ item, done: false }));
+    const packing = (() => { try { return f.packing ? JSON.parse(f.packing) : PACKING_TEMPLATE.map(item => ({ item, done: false })); } catch { return PACKING_TEMPLATE.map(item => ({ item, done: false })); } })();
 
     const modal = document.createElement('div');
     modal.className = 'modal-overlay active';

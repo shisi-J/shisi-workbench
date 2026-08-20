@@ -46,6 +46,8 @@ export default class EnergyPage {
       this.quotes = await getAll('quotes');
     }
     this.quoteIndex = Math.floor(Math.random() * this.quotes.length);
+    const todayDiaries = await getAll('diaries');
+    this.todayDone = todayDiaries.filter(d => d.date === this.todayStr()).length;
   }
 
   beliefs() { return this.quotes.filter(q => q.tags?.includes('belief')); }
@@ -86,11 +88,11 @@ export default class EnergyPage {
       </div>
 
       <div class="energy-progress-row">
-        <span class="energy-progress-text">今日完成 0/6</span>
-        <span class="energy-progress-pct">0%</span>
+        <span class="energy-progress-text">今日记录 ${(this.todayDone || 0)}/6</span>
+        <span class="energy-progress-pct">${Math.min(100, Math.round((this.todayDone || 0) / 6 * 100))}%</span>
       </div>
       <div class="energy-progress-bar">
-        <div class="energy-progress-fill" style="width:0%"></div>
+        <div class="energy-progress-fill" style="width:${Math.min(100, Math.round((this.todayDone || 0) / 6 * 100))}%"></div>
       </div>
 
       <div class="energy-quote-card" id="quoteCard">
@@ -201,7 +203,7 @@ export default class EnergyPage {
     div.querySelector('#popupSave').onclick = async () => {
       const v = div.querySelector('#popupInput').value.trim();
       if (!v) { window.showToast('写点什么吧'); return; }
-      try { await add('diaries', { content: v, type, date: new Date().toISOString().slice(0,10) }); } catch(e) {}
+      try { await add('diaries', { content: v, type, date: new Date().toISOString().slice(0,10) }); } catch(e) { window.showToast('❌ 保存失败，请重试'); return; }
       close();
       window.showToast(type === 'diary' ? '✅ 已记录' : '✅ 很棒！行动是治愈焦虑最好的药');
     };
@@ -223,7 +225,9 @@ export default class EnergyPage {
     div.querySelector('#beliefSave').onclick = async () => {
       const v = div.querySelector('#beliefInput').value.trim();
       if (!v) { window.showToast('请输入信念内容'); return; }
-      await add('quotes', { content: v, source: '搞钱信念墙', tags: ['belief'], favorite: true });
+      try {
+        await add('quotes', { content: v, source: '搞钱信念墙', tags: ['belief'], favorite: true });
+      } catch(e) { window.showToast('❌ 保存失败，请重试'); return; }
       close();
       await this.loadData();
       this.render();

@@ -435,7 +435,7 @@ export default class FitnessPage {
 
   bindEvents() {
     // Tab 切换
-    document.querySelectorAll('[data-tab]').forEach(tab => {
+    this.container.querySelectorAll('[data-tab]').forEach(tab => {
       tab.addEventListener('click', () => {
         this.activeTab = tab.getAttribute('data-tab');
         this.render();
