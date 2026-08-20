@@ -1589,6 +1589,10 @@ async function cloudSync() {
   for (const table of tables) {
     rawData[table] = await db.table(table).toArray();
   }
+  // 排除敏感设置项：Token 仅在本地保存，不同步到云端
+  if (rawData.settings) {
+    rawData.settings = rawData.settings.filter(s => s.key !== 'github_token');
+  }
   const content = JSON.stringify({
     version: '2.0',
     timestamp: new Date().toISOString(),
@@ -1724,13 +1728,29 @@ async function cloudRestore() {
   }
 
   // 清空并恢复（跳过 _backups 表）
+  // 恢复前保存本地的 Token，恢复后写回，避免被云端数据覆盖
+  const localToken = await getGitHubToken();
+  const localGistId = await getGistId();
   for (const tableName of Object.keys(decrypted)) {
     if (tableName === '_backups') continue;
     try {
       if (db.table(tableName)) {
-        await db.table(tableName).clear();
-        if (decrypted[tableName].length > 0) {
-          await db.table(tableName).bulkAdd(decrypted[tableName]);
+        // 恢复 settings 表时排除 github_token，保留本地已有的 Token
+        if (tableName === 'settings') {
+          const remoteSettings = (decrypted[tableName] || []).filter(s => s.key !== 'github_token');
+          const localTokenRow = await db.settings.get('github_token');
+          await db.table(tableName).clear();
+          if (remoteSettings.length > 0) {
+            await db.table(tableName).bulkAdd(remoteSettings);
+          }
+          if (localTokenRow) {
+            await db.table(tableName).put(localTokenRow);
+          }
+        } else {
+          await db.table(tableName).clear();
+          if (decrypted[tableName].length > 0) {
+            await db.table(tableName).bulkAdd(decrypted[tableName]);
+          }
         }
       }
     } catch (e) {
