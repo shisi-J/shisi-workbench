@@ -129,7 +129,7 @@ export default class InsightPage {
         ${insight.sourceTitle ? `
           <div style="font-size: var(--font-xs); color: var(--text-tertiary); margin-bottom: var(--space-1);">
             📎 来源：${insight.sourceTitle}
-            ${insight.sourceUrl ? `<a href="${insight.sourceUrl}" target="_blank" style="color: var(--brand); margin-left: 4px;" onclick="event.stopPropagation()">查看</a>` : ''}
+            ${insight.sourceUrl ? `<a href="${(insight.sourceUrl || '').replace(/"/g, '&quot;')}" target="_blank" style="color: var(--brand); margin-left: 4px;" onclick="event.stopPropagation()">查看</a>` : ''}
           </div>
         ` : ''}
         <div class="card-body" style="

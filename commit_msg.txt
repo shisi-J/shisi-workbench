@@ -1,0 +1,13 @@
+fix: 第三轮全面排查修复 SW v1.9.28
+
+1. energy.js: 修复日期格式不匹配导致"今日记录"永远为0
+   - todayStr()返回ISO格式(2026-08-20)与日记保存格式一致
+   - 新增todayDisplayStr()用于显示(8月20日·星期三)
+   - 保存日记后刷新todayDone计数
+2. eat.js: 修复表单Tab切换label索引错误(labels[4/5]→labels[5/6])
+   - 之前"状态"label被错误覆盖为"视频/教程链接"
+3. social.js: update()调用补充title参数+清理死代码(if-else分支相同)
+4. energy.js: 删除操作添加try-catch错误处理
+5. insight.js: 修复sourceUrl未转义双引号导致XSS风险
+6. inspiration.js: 导入弹窗使用detectPlatform()复用函数+生成渐变封面
+7. work.js: 搜索过滤排除attachments字段避免[object Object]污染

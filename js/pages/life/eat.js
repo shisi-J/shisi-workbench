@@ -356,8 +356,8 @@ export default class EatPage {
         const labels = modal.querySelectorAll('.form-label');
         if (labels[0]) labels[0].textContent = isCookNow ? '菜名' : '店名';
         if (labels[1]) labels[1].textContent = isCookNow ? '菜系类型' : '城市地区';
-        if (labels[4]) labels[4].textContent = isCookNow ? '视频/教程链接' : '探店外链';
-        if (labels[5]) labels[5].textContent = isCookNow ? '食谱/做法备注' : '评价';
+        if (labels[5]) labels[5].textContent = isCookNow ? '视频/教程链接' : '探店外链';
+        if (labels[6]) labels[6].textContent = isCookNow ? '食谱/做法备注' : '评价';
       });
     });
 

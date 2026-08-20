@@ -227,7 +227,9 @@ export default class WorkPage {
     if (this.searchKeyword) {
       const kw = this.searchKeyword.toLowerCase();
       filtered = filtered.filter(r => {
-        const allValues = Object.values(r.fields || {}).join(' ').toLowerCase();
+        const fieldObj = { ...r.fields };
+        delete fieldObj.attachments;
+        const allValues = Object.values(fieldObj).join(' ').toLowerCase();
         return allValues.includes(kw);
       });
     }

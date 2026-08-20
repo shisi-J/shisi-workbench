@@ -468,16 +468,9 @@ export default class SocialPage {
           e.stopPropagation();
           modal.querySelectorAll('.direction-btn').forEach(b => {
             b.classList.remove('active');
-            const dir = b.dataset.dir;
-            if (dir === '送出') {
-              b.style.background = 'var(--bg-inset)';
-              b.style.color = 'var(--text-tertiary)';
-              b.style.borderColor = 'var(--border-default)';
-            } else {
-              b.style.background = 'var(--bg-inset)';
-              b.style.color = 'var(--text-tertiary)';
-              b.style.borderColor = 'var(--border-default)';
-            }
+            b.style.background = 'var(--bg-inset)';
+            b.style.color = 'var(--text-tertiary)';
+            b.style.borderColor = 'var(--border-default)';
           });
           btn.classList.add('active');
           const dir = btn.dataset.dir;
@@ -501,7 +494,8 @@ export default class SocialPage {
       fields.subType = this.activeTab;
 
       if (isEdit) {
-        await update('lifeRecords', record.id, { fields, updatedAt: new Date().toISOString() });
+        const title = fields.title || fields.contactName || fields.gatheringType || '社交记录';
+        await update('lifeRecords', record.id, { title, fields, updatedAt: new Date().toISOString() });
       } else {
         await add('lifeRecords', { category: this.category, title: fields.title || fields.contactName || fields.gatheringType || '社交记录', fields, createdAt: new Date().toISOString() });
       }

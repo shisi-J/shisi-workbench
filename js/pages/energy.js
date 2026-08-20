@@ -65,6 +65,14 @@ export default class EnergyPage {
 
   todayStr() {
     const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  todayDisplayStr() {
+    const d = new Date();
     return `${d.getMonth() + 1}月${d.getDate()}日 · 星期${WEEKDAYS[d.getDay()]}`;
   }
 
@@ -81,7 +89,7 @@ export default class EnergyPage {
           <div class="energy-header-icon">SS</div>
           <div class="energy-header-info">
             <div class="energy-header-title">SS能量</div>
-            <div class="energy-header-date">${this.todayStr()}</div>
+            <div class="energy-header-date">${this.todayDisplayStr()}</div>
           </div>
         </div>
         <button class="energy-header-add" id="addBelief">+</button>
@@ -155,10 +163,12 @@ export default class EnergyPage {
     document.querySelectorAll('[data-del]').forEach(el => {
       el.addEventListener('click', async e => {
         e.stopPropagation();
-        await remove('quotes', parseInt(el.dataset.del));
-        await this.loadData();
-        this.render();
-        window.showToast('已删除');
+        try {
+          await remove('quotes', parseInt(el.dataset.del));
+          await this.loadData();
+          this.render();
+          window.showToast('已删除');
+        } catch(e) { window.showToast('❌ 删除失败，请重试'); }
       });
     });
   }
@@ -203,7 +213,8 @@ export default class EnergyPage {
     div.querySelector('#popupSave').onclick = async () => {
       const v = div.querySelector('#popupInput').value.trim();
       if (!v) { window.showToast('写点什么吧'); return; }
-      try { await add('diaries', { content: v, type, date: new Date().toISOString().slice(0,10) }); } catch(e) { window.showToast('❌ 保存失败，请重试'); return; }
+      try { await add('diaries', { content: v, type, date: this.todayStr() }); } catch(e) { window.showToast('❌ 保存失败，请重试'); return; }
+      this.todayDone = (await getAll('diaries')).filter(d => d.date === this.todayStr()).length;
       close();
       window.showToast(type === 'diary' ? '✅ 已记录' : '✅ 很棒！行动是治愈焦虑最好的药');
     };

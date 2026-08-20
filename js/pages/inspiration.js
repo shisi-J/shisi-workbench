@@ -1046,16 +1046,11 @@ export default class InspirationPage {
       const note = document.getElementById('importNote').value.trim();
       if (!url && !title) { window.showToast('请输入链接或标题'); return; }
       
-      // 自动识别平台
-      let platform = 'webpage';
-      const lower = (url || '').toLowerCase();
-      if (lower.includes('bilibili') || lower.includes('b23.tv')) platform = 'bilibili';
-      else if (lower.includes('douyin')) platform = 'douyin';
-      else if (lower.includes('xiaohongshu') || lower.includes('xhslink')) platform = 'xhs';
-      
+      const platform = detectPlatform(url);
+
       await add('inspirations', {
         url, title: title || '分享内容', platform,
-        author: '', cover: '', summary: note,
+        author: '', cover: generatePlaceholderCover(platform, ''), summary: note,
         tags: ['分享导入'], notes: '', favorite: false,
       });
       close();
