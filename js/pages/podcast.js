@@ -193,11 +193,18 @@ export default class PodcastPage {
       <div class="podcast-card ${item.checked ? 'checked' : ''}" data-id="${item.id}">
         <!-- 缩略图 -->
         <div class="podcast-card-thumb" ${hasUrl ? `data-action="open" data-url="${item.url}"` : ''} style="background: linear-gradient(135deg, ${typeColor}44, ${typeColor}22);">
-          ${item.cover
-            ? `<img src="${item.cover}" alt="${item.title}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-               <div class="podcast-card-placeholder" style="display:none;">${typeConfig.icon}</div>`
-            : `<div class="podcast-card-placeholder">${typeConfig.icon}</div>`
-          }
+          ${(() => {
+            const cover = item.cover || '';
+            const isGradient = cover.startsWith('linear-gradient') || cover.startsWith('radial-gradient');
+            if (cover && !isGradient) {
+              return `<img src="${cover}" alt="${item.title}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                 <div class="podcast-card-placeholder" style="display:none;">${typeConfig.icon}</div>`;
+            } else if (isGradient) {
+              return `<div class="podcast-card-placeholder" style="background: ${cover}; -webkit-background-clip: padding-box; background-clip: padding-box;">${typeConfig.icon}</div>`;
+            } else {
+              return `<div class="podcast-card-placeholder">${typeConfig.icon}</div>`;
+            }
+          })()}
           ${platform ? `
             <div class="podcast-card-badge" style="background:${platform.color}">
               ${platform.icon}
@@ -274,7 +281,20 @@ export default class PodcastPage {
     const searchInput = document.getElementById('podcastSearch');
     searchInput?.addEventListener('input', (e) => {
       this.searchKeyword = e.target.value;
-      this.render();
+      const filtered = this.getFiltered();
+      const listEl = document.getElementById('podcastList');
+      if (listEl) {
+        listEl.innerHTML = filtered.length === 0 ? `
+          <div class="empty-state">
+            <div class="empty-icon">🎙️</div>
+            <div class="empty-text">
+              ${this.searchKeyword || this.filterType !== '全部' || this.filterStatus !== 'all'
+                ? '没有匹配的播客内容，试试其他关键词'
+                : '还没有播客内容<br>点击右下角 + 添加'}
+            </div>
+          </div>` : filtered.map(item => this.renderCard(item)).join('');
+        this.bindCardEvents();
+      }
     });
 
     // 搜索清除

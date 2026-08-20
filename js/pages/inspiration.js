@@ -897,9 +897,10 @@ export default class InspirationPage {
               platform: platform,
               cover: coverInput || generatePlaceholderCover(platform, ''),
               description: document.getElementById('inspSummary').value.trim(),
-              notes: '',
+              notes: document.getElementById('inspNotes').value.trim(),
               type: '对话',
               duration: '',
+              tags: tags,
               checked: false,
             });
           } else if (target === 'insight') {
@@ -934,8 +935,29 @@ export default class InspirationPage {
               },
               category: 'eat',
             });
-          } else if (target.startsWith('life-')) {
-            const cat = target.replace('life-', '');
+          } else if (target === 'life-eat') {
+            // 美食探店：同步为「学做菜」记录
+            const videoPlatform = platform === 'bilibili' ? 'bilibili'
+              : platform === 'douyin' ? 'douyin'
+              : platform === 'xhs' ? 'xhs'
+              : 'none';
+            await add('lifeRecords', {
+              title: title || '未命名灵感',
+              fields: {
+                title: title || '未命名灵感',
+                recordType: 'cook',
+                url: url,
+                videoPlatform,
+                subType: '',
+                status: '想学',
+                rating: '',
+                city: '',
+                review: document.getElementById('inspSummary').value.trim(),
+                recipe: document.getElementById('inspSummary').value.trim(),
+              },
+              category: 'eat',
+            });
+          } else if (target === 'life-fitness') {
             const videoPlatform = platform === 'bilibili' ? 'bilibili'
               : platform === 'douyin' ? 'douyin'
               : platform === 'xhs' ? 'xhs'
@@ -949,7 +971,51 @@ export default class InspirationPage {
                 trainType: '跟练视频',
                 remark: document.getElementById('inspSummary').value.trim(),
               },
-              category: cat,
+              category: 'fitness',
+            });
+          } else if (target === 'life-beauty') {
+            await add('lifeRecords', {
+              title: title || '未命名灵感',
+              fields: {
+                title: title || '未命名灵感',
+                inspirationUrl: url,
+                remark: document.getElementById('inspSummary').value.trim(),
+              },
+              category: 'beauty',
+            });
+          } else if (target === 'life-travel') {
+            await add('lifeRecords', {
+              title: title || '未命名灵感',
+              fields: {
+                title: title || '未命名灵感',
+                guideUrl: url,
+                status: '想去',
+                remark: document.getElementById('inspSummary').value.trim(),
+              },
+              category: 'travel',
+            });
+          } else if (target === 'life-home') {
+            await add('lifeRecords', {
+              title: title || '未命名灵感',
+              fields: {
+                title: title || '未命名灵感',
+                url: url,
+                remark: document.getElementById('inspSummary').value.trim(),
+              },
+              category: 'home',
+            });
+          } else if (target === 'life-social') {
+            await add('lifeRecords', {
+              title: title || '未命名灵感',
+              fields: {
+                title: title || '未命名灵感',
+                subType: 'activity',
+                activityType: '其他',
+                contactName: '',
+                remark: document.getElementById('inspSummary').value.trim(),
+                url: url,
+              },
+              category: 'social',
             });
           }
         } catch (e) {}

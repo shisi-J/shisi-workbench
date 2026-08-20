@@ -64,7 +64,13 @@ export default class SocialPage {
       filtered = filtered.filter(r => r.fields?.relation === this.filterRelation);
     }
     if (this.filterScene) {
-      filtered = filtered.filter(r => r.fields?.scene === this.filterScene);
+      if (this.activeTab === 'gathering') {
+        filtered = filtered.filter(r => r.fields?.gatheringType === this.filterScene);
+      } else if (this.activeTab === 'activity') {
+        filtered = filtered.filter(r => r.fields?.activityType === this.filterScene);
+      } else {
+        filtered = filtered.filter(r => r.fields?.scene === this.filterScene);
+      }
     }
     return filtered.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
   }
@@ -466,11 +472,11 @@ export default class SocialPage {
             if (dir === '送出') {
               b.style.background = 'var(--bg-inset)';
               b.style.color = 'var(--text-tertiary)';
-              b.style.borderColor = 'var(--border-color)';
+              b.style.borderColor = 'var(--border-default)';
             } else {
               b.style.background = 'var(--bg-inset)';
               b.style.color = 'var(--text-tertiary)';
-              b.style.borderColor = 'var(--border-color)';
+              b.style.borderColor = 'var(--border-default)';
             }
           });
           btn.classList.add('active');
@@ -519,8 +525,8 @@ export default class SocialPage {
       <div class="form-group">
         <label class="form-label">方向</label>
         <div style="display:flex;gap:var(--space-2);">
-          <button type="button" class="direction-btn ${direction === '送出' ? 'active' : ''}" data-dir="送出" style="flex:1;padding:var(--space-2);border:2px solid var(--border-color);border-radius:var(--radius-md);background:${direction === '送出' ? 'rgba(239,71,111,0.1)' : 'var(--bg-inset)'};color:${direction === '送出' ? '#EF476F' : 'var(--text-tertiary)'};font-weight:600;cursor:pointer;">📤 送出</button>
-          <button type="button" class="direction-btn ${direction === '收到' ? 'active' : ''}" data-dir="收到" style="flex:1;padding:var(--space-2);border:2px solid var(--border-color);border-radius:var(--radius-md);background:${direction === '收到' ? 'rgba(6,214,160,0.1)' : 'var(--bg-inset)'};color:${direction === '收到' ? '#06D6A0' : 'var(--text-tertiary)'};font-weight:600;cursor:pointer;">📥 收到</button>
+          <button type="button" class="direction-btn ${direction === '送出' ? 'active' : ''}" data-dir="送出" style="flex:1;padding:var(--space-2);border:2px solid var(--border-default);border-radius:var(--radius-md);background:${direction === '送出' ? 'rgba(239,71,111,0.1)' : 'var(--bg-inset)'};color:${direction === '送出' ? '#EF476F' : 'var(--text-tertiary)'};font-weight:600;cursor:pointer;">📤 送出</button>
+          <button type="button" class="direction-btn ${direction === '收到' ? 'active' : ''}" data-dir="收到" style="flex:1;padding:var(--space-2);border:2px solid var(--border-default);border-radius:var(--radius-md);background:${direction === '收到' ? 'rgba(6,214,160,0.1)' : 'var(--bg-inset)'};color:${direction === '收到' ? '#06D6A0' : 'var(--text-tertiary)'};font-weight:600;cursor:pointer;">📥 收到</button>
         </div>
       </div>
       <div class="form-group">

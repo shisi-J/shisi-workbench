@@ -1,4 +1,4 @@
-/* ========================================
+﻿/* ========================================
    诗思工作台 - 布局样式
    侧边栏（向颖风格）+ 顶栏 + 内容区
    ======================================== */
@@ -658,7 +658,7 @@
   width: 100%;
   min-height: 72px;
   padding: var(--space-3);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   background: var(--bg-inset);
   color: var(--text-primary);

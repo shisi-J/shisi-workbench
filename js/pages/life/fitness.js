@@ -673,11 +673,11 @@ export default class FitnessPage {
             <label class="form-label">今日状态</label>
             <div style="display: flex; gap: var(--space-2); align-items: center; height: 44px;">
               <div class="fit-toggle" data-field="cheatMeal" data-checked="${f.cheatMeal === 'true' ? '1' : '0'}" style="font-size: var(--font-sm); display:flex; align-items:center; gap:4px; cursor:pointer;">
-                <span class="fit-box" style="width:18px;height:18px;border:2px solid ${f.cheatMeal === 'true' ? 'var(--brand)' : 'var(--border-color)'};border-radius:4px;background:${f.cheatMeal === 'true' ? 'var(--brand)' : 'transparent'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;flex-shrink:0;">${f.cheatMeal === 'true' ? '✓' : ''}</span>
+                <span class="fit-box" style="width:18px;height:18px;border:2px solid ${f.cheatMeal === 'true' ? 'var(--brand)' : 'var(--border-default)'};border-radius:4px;background:${f.cheatMeal === 'true' ? 'var(--brand)' : 'transparent'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;flex-shrink:0;">${f.cheatMeal === 'true' ? '✓' : ''}</span>
                 🍔 欺骗餐
               </div>
               <div class="fit-toggle" data-field="period" data-checked="${f.period === 'true' ? '1' : '0'}" style="font-size: var(--font-sm); display:flex; align-items:center; gap:4px; cursor:pointer;">
-                <span class="fit-box" style="width:18px;height:18px;border:2px solid ${f.period === 'true' ? 'var(--brand)' : 'var(--border-color)'};border-radius:4px;background:${f.period === 'true' ? 'var(--brand)' : 'transparent'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;flex-shrink:0;">${f.period === 'true' ? '✓' : ''}</span>
+                <span class="fit-box" style="width:18px;height:18px;border:2px solid ${f.period === 'true' ? 'var(--brand)' : 'var(--border-default)'};border-radius:4px;background:${f.period === 'true' ? 'var(--brand)' : 'transparent'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;flex-shrink:0;">${f.period === 'true' ? '✓' : ''}</span>
                 🌸 生理期
               </div>
             </div>
@@ -712,7 +712,7 @@ export default class FitnessPage {
           box.textContent = '✓';
         } else {
           box.style.background = 'transparent';
-          box.style.borderColor = 'var(--border-color)';
+          box.style.borderColor = 'var(--border-default)';
           box.textContent = '';
         }
       });

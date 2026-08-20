@@ -3,7 +3,7 @@
  * 嘻嘻风格卡片设计 + 分类标签体系 + 视频链接选填 + 课程章节分段进度 + 内置示例数据
  */
 
-import { getByCategory, add, update, remove, getAll } from '../db.js';
+import { getByCategory, add, update, remove, getAll, getSetting, setSetting } from '../db.js';
 
 // 学习分类配置
 const CATEGORY_CONFIG = {
@@ -241,17 +241,21 @@ export default class LearnPage {
     try {
       this.learnings = await getByCategory('learnings', this.category);
 
-      // 如果没有数据，加载内置示例
-      if (this.learnings.length === 0 && SEED_DATA[this.category] && !this.seeded) {
-        this.seeded = true;
-        for (const item of SEED_DATA[this.category]) {
-          await add('learnings', {
-            ...item,
-            category: this.category,
-            checked: false,
-          });
+      // 如果没有数据，加载内置示例（仅首次，用持久化标记防止删除后复活）
+      if (this.learnings.length === 0 && SEED_DATA[this.category]) {
+        const seedKey = `seed_learn_${this.category}`;
+        const alreadySeeded = await getSetting(seedKey, false);
+        if (!alreadySeeded) {
+          await setSetting(seedKey, true);
+          for (const item of SEED_DATA[this.category]) {
+            await add('learnings', {
+              ...item,
+              category: this.category,
+              checked: false,
+            });
+          }
+          this.learnings = await getByCategory('learnings', this.category);
         }
-        this.learnings = await getByCategory('learnings', this.category);
       }
     } catch (e) {
       this.learnings = [];
@@ -375,11 +379,18 @@ export default class LearnPage {
       <div class="learn-card" data-id="${item.id}">
         ${hasUrl ? `
           <div class="learn-card-thumb" data-action="open" data-url="${item.url}">
-            ${item.cover
-              ? `<img src="${item.cover}" alt="${item.title}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                 <div class="cover-placeholder" style="display: none;">${this.config.icon}</div>`
-              : `<div class="cover-placeholder">${this.config.icon}</div>`
-            }
+            ${(() => {
+              const cover = item.cover || '';
+              const isGradient = cover.startsWith('linear-gradient') || cover.startsWith('radial-gradient');
+              if (cover && !isGradient) {
+                return `<img src="${cover}" alt="${item.title}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                   <div class="cover-placeholder" style="display: none;">${this.config.icon}</div>`;
+              } else if (isGradient) {
+                return `<div class="cover-placeholder" style="background: ${cover}; -webkit-background-clip: padding-box; background-clip: padding-box;">${this.config.icon}</div>`;
+              } else {
+                return `<div class="cover-placeholder">${this.config.icon}</div>`;
+              }
+            })()}
             <div class="learn-card-platform">
               <span class="platform-badge ${platform.class}">${platform.icon}</span>
             </div>
@@ -651,7 +662,7 @@ export default class LearnPage {
               </div>
             `).join('')}
           </div>
-          <label class="btn btn-outline btn-sm" style="display:block;text-align:center;cursor:pointer;border:2px dashed var(--border);">
+          <label class="btn btn-outline btn-sm" style="display:block;text-align:center;cursor:pointer;border:2px dashed var(--border-default);">
             📁 选择文件上传
             <input type="file" id="learnFiles" multiple style="display:none;" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,.md,.json,.zip,.rar">
           </label>
@@ -716,7 +727,7 @@ export default class LearnPage {
           e.target.textContent = '✓';
         } else {
           e.target.style.background = 'transparent';
-          e.target.style.borderColor = 'var(--border-color)';
+          e.target.style.borderColor = 'var(--border-default)';
           e.target.textContent = '';
         }
       }
@@ -881,7 +892,7 @@ export default class LearnPage {
   renderChapterInput(index, title, done) {
     return `
       <div class="chapter-input-row" style="display: flex; gap: var(--space-1); align-items: center;">
-        <div class="chapter-toggle" data-checked="${done ? '1' : '0'}" style="flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; border: 2px solid ${done ? 'var(--brand)' : 'var(--border-color)'}; border-radius: 4px; background: ${done ? 'var(--brand)' : 'transparent'}; color: #fff; font-size: 12px; flex-shrink: 0;">${done ? '✓' : ''}</div>
+        <div class="chapter-toggle" data-checked="${done ? '1' : '0'}" style="flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; border: 2px solid ${done ? 'var(--brand)' : 'var(--border-default)'}; border-radius: 4px; background: ${done ? 'var(--brand)' : 'transparent'}; color: #fff; font-size: 12px; flex-shrink: 0;">${done ? '✓' : ''}</div>
         <input type="text" class="form-input chapter-input" placeholder="第 ${index + 1} 章标题" value="${title}" style="flex: 1;">
         ${index > 0 ? '<button class="chapter-remove" style="background: none; border: none; color: var(--danger); font-size: 18px; padding: 4px 8px; cursor: pointer;">✕</button>' : ''}
       </div>

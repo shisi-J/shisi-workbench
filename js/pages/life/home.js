@@ -176,8 +176,24 @@ export default class HomePage {
     // 搜索
     document.getElementById('homeSearch')?.addEventListener('input', (e) => {
       this.searchKeyword = e.target.value;
-      this.render();
+      const filtered = this.getFiltered();
+      const listEl = document.getElementById('recordList');
+      if (listEl) {
+        listEl.innerHTML = filtered.length === 0 ? `
+          <div class="empty-state">
+            <div class="empty-icon">🏠</div>
+            <div class="empty-text">${this.records.length === 0 ? '还没有小屋记录<br>点击 + 添加看房/硬装/软装/好物' : '没有匹配的记录'}</div>
+          </div>` : filtered.map(r => this.renderCard(r)).join('');
+        this.bindCardEvents();
+      }
     });
+    // 添加
+    document.getElementById('addRecordBtn')?.addEventListener('click', () => this.showFormModal());
+    // 卡片事件
+    this.bindCardEvents();
+  }
+
+  bindCardEvents() {
     // 编辑/删除
     document.querySelectorAll('[data-action="edit"]').forEach(el => {
       el.addEventListener('click', (e) => {
@@ -207,8 +223,6 @@ export default class HomePage {
       });
       card.style.cursor = 'pointer';
     });
-    // 添加
-    document.getElementById('addRecordBtn')?.addEventListener('click', () => this.showFormModal());
     // 附件点击：预览/下载
     bindCardAttachmentClicks(this.records);
   }

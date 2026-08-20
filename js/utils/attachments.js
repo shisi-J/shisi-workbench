@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 通用附件工具模块
  * 供所有页面模块复用：文件上传、展示、预览、下载
  */
@@ -106,7 +106,7 @@ export function renderUploadField(existingAttachments = []) {
           </div>
         `).join('')}
       </div>
-      <label class="btn btn-outline btn-sm" style="display:block;text-align:center;cursor:pointer;border:2px dashed var(--border);">
+      <label class="btn btn-outline btn-sm" style="display:block;text-align:center;cursor:pointer;border:2px dashed var(--border-default);">
         📁 选择文件上传
         <input type="file" id="fileInput" multiple style="display:none;" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,.md,.json,.zip,.rar">
       </label>

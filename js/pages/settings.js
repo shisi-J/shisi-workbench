@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 设置页面
  */
 
@@ -62,7 +62,7 @@ export default class SettingsPage {
           </div>
           <div style="padding: var(--space-3); background: var(--bg-inset); border-radius: var(--radius-sm); font-size: var(--font-sm); color: var(--text-secondary); line-height: 1.8;">
             <div style="font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-2);">📋 免费API配置指南（三选一）</div>
-            <div style="margin-bottom: var(--space-3); padding-bottom: var(--space-2); border-bottom: 1px solid var(--border-color);">
+            <div style="margin-bottom: var(--space-3); padding-bottom: var(--space-2); border-bottom: 1px solid var(--border-default);">
               <div style="font-weight: 600; color: var(--brand);">方案一：SiliconFlow（硅基流动）- 推荐</div>
               <div>1. 访问 <a href="https://cloud.siliconflow.cn" target="_blank" style="color: var(--brand);">cloud.siliconflow.cn</a> 注册账号</div>
               <div>2. 新用户注册即送 14 元免费额度</div>
@@ -72,7 +72,7 @@ export default class SettingsPage {
               <div>6. 模型填：<code style="background:var(--bg-card);padding:2px 6px;border-radius:4px;">Qwen/Qwen2.5-7B-Instruct</code></div>
               <div>7. 其他可用模型：deepseek-ai/DeepSeek-V3、Pro/Qwen/Qwen2.5-72B</div>
             </div>
-            <div style="margin-bottom: var(--space-3); padding-bottom: var(--space-2); border-bottom: 1px solid var(--border-color);">
+            <div style="margin-bottom: var(--space-3); padding-bottom: var(--space-2); border-bottom: 1px solid var(--border-default);">
               <div style="font-weight: 600; color: var(--brand);">方案二：ChatAnywhere（免费GPT代理）</div>
               <div>1. 访问 <a href="https://github.com/chatanywhere/GPT_API_free" target="_blank" style="color: var(--brand);">github.com/chatanywhere</a></div>
               <div>2. 点击 README 中的「申请免费内测密钥」</div>

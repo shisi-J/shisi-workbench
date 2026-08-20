@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 旅游 · 行程游记页面框架
  * 规划功能：状态(想去/准备中/已去)、内置出行打包勾选清单
  *           可填行程预算、挂载旅行攻略外链
@@ -211,7 +211,7 @@ export default class TravelPage {
           <div id="packingList" style="display: flex; flex-direction: column; gap: 4px; max-height: 200px; overflow-y: auto; padding: var(--space-2); background: var(--bg-inset); border-radius: var(--radius-xs);">
             ${packing.map((p, i) => `
               <div class="pack-toggle" data-pack-idx="${i}" data-checked="${p.done ? '1' : '0'}" style="font-size: var(--font-sm); display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 2px 0;">
-                <span class="pack-box" style="width:18px;height:18px;border:2px solid ${p.done ? 'var(--brand)' : 'var(--border-color)'};border-radius:4px;background:${p.done ? 'var(--brand)' : 'transparent'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;flex-shrink:0;">${p.done ? '✓' : ''}</span>
+                <span class="pack-box" style="width:18px;height:18px;border:2px solid ${p.done ? 'var(--brand)' : 'var(--border-default)'};border-radius:4px;background:${p.done ? 'var(--brand)' : 'transparent'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;flex-shrink:0;">${p.done ? '✓' : ''}</span>
                 <span>${p.item}</span>
               </div>
             `).join('')}
@@ -247,7 +247,7 @@ export default class TravelPage {
           box.textContent = '✓';
         } else {
           box.style.background = 'transparent';
-          box.style.borderColor = 'var(--border-color)';
+          box.style.borderColor = 'var(--border-default)';
           box.textContent = '';
         }
       });

@@ -513,7 +513,7 @@ function registerSW() {
 
   window.addEventListener('load', () => {
     // 加 cache-busting 参数，确保浏览器不缓存旧 SW
-    navigator.serviceWorker.register('sw.js?v=1.9.23').then(registration => {
+    navigator.serviceWorker.register('sw.js?v=1.9.26').then(registration => {
       let pendingUpdate = false;
 
       // 检测到新版本已下载
