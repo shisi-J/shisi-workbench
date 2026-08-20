@@ -1,13 +1,15 @@
-fix: 第三轮全面排查修复 SW v1.9.28
+feat: 能量模块重新设计 SW v1.9.29
 
-1. energy.js: 修复日期格式不匹配导致"今日记录"永远为0
-   - todayStr()返回ISO格式(2026-08-20)与日记保存格式一致
-   - 新增todayDisplayStr()用于显示(8月20日·星期三)
-   - 保存日记后刷新todayDone计数
-2. eat.js: 修复表单Tab切换label索引错误(labels[4/5]→labels[5/6])
-   - 之前"状态"label被错误覆盖为"视频/教程链接"
-3. social.js: update()调用补充title参数+清理死代码(if-else分支相同)
-4. energy.js: 删除操作添加try-catch错误处理
-5. insight.js: 修复sourceUrl未转义双引号导致XSS风险
-6. inspiration.js: 导入弹窗使用detectPlatform()复用函数+生成渐变封面
-7. work.js: 搜索过滤排除attachments字段避免[object Object]污染
+1. 日记可查可存储:
+   - 新增"今日记录"展示区，显示今天写的日记和完成的事
+   - 每条记录显示类型图标(📝/✅)、内容、时间
+   - 新增"查看全部"按钮，打开历史记录弹窗
+   - 历史记录按日期分组展示，支持滚动浏览
+   - 保存日记后自动刷新页面，实时看到新记录
+   - 日记保存时添加createdAt时间戳
+2. 黄色高亮框改为白色半透明毛玻璃效果:
+   - color: #FFE082 → rgba(255,255,255,0.95)
+   - background: rgba(255,224,130,0.18) → rgba(255,255,255,0.15)
+   - border: rgba(255,224,130,0.3) → rgba(255,255,255,0.25)
+   - 添加backdrop-filter毛玻璃效果，与紫色品牌渐变卡片更搭配
+3. 新增日记区域CSS样式(energy-diary-section/list/item等)

@@ -1,6 +1,6 @@
 /**
- * 能量工作台 - 1:1 对标大大7
- * 除底部菜单栏和页面配色外，完全照抄参考设计
+ * 能量工作台 - SS能量
+ * 日记/完成事可查看可存储 + 信念墙 + 情绪急救 + 每日金句
  */
 import { add, getAll, remove } from '../db.js';
 
@@ -31,6 +31,7 @@ export default class EnergyPage {
     this.container = container;
     this.quotes = [];
     this.quoteIndex = 0;
+    this.diaries = [];
   }
 
   async render() {
@@ -46,8 +47,11 @@ export default class EnergyPage {
       this.quotes = await getAll('quotes');
     }
     this.quoteIndex = Math.floor(Math.random() * this.quotes.length);
-    const todayDiaries = await getAll('diaries');
-    this.todayDone = todayDiaries.filter(d => d.date === this.todayStr()).length;
+    this.diaries = await getAll('diaries');
+    this.todayDone = this.diaries.filter(d => d.date === this.todayStr()).length;
+    this.todayDiaries = this.diaries
+      .filter(d => d.date === this.todayStr())
+      .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
   }
 
   beliefs() { return this.quotes.filter(q => q.tags?.includes('belief')); }
@@ -74,6 +78,14 @@ export default class EnergyPage {
   todayDisplayStr() {
     const d = new Date();
     return `${d.getMonth() + 1}月${d.getDate()}日 · 星期${WEEKDAYS[d.getDay()]}`;
+  }
+
+  formatTime(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    return `${h}:${m}`;
   }
 
   html() {
@@ -130,6 +142,24 @@ export default class EnergyPage {
         `).join('')}
       </div>
 
+      ${this.todayDiaries.length > 0 ? `
+        <div class="energy-diary-section">
+          <div class="energy-diary-header">
+            <span>📋 今日记录</span>
+            <button class="energy-diary-more" id="viewAllDiary">查看全部 ›</button>
+          </div>
+          <div class="energy-diary-list">
+            ${this.todayDiaries.map(d => `
+              <div class="energy-diary-item">
+                <span class="energy-diary-type">${d.type === 'diary' ? '📝' : '✅'}</span>
+                <span class="energy-diary-content">${(d.content || '').replace(/</g, '&lt;')}</span>
+                <span class="energy-diary-time">${this.formatTime(d.createdAt)}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+
       <div class="energy-belief-section">
         <div class="energy-belief-header">🔥 搞钱信念墙</div>
         ${bs.length === 0 ? '<div class="energy-belief-empty">还没有信念<br>点击右上角 + 添加</div>' : bs.map(b => `
@@ -159,6 +189,8 @@ export default class EnergyPage {
     });
 
     document.getElementById('addBelief')?.addEventListener('click', () => this.showBeliefPopup());
+
+    document.getElementById('viewAllDiary')?.addEventListener('click', () => this.showDiaryHistory());
 
     document.querySelectorAll('[data-del]').forEach(el => {
       el.addEventListener('click', async e => {
@@ -213,11 +245,51 @@ export default class EnergyPage {
     div.querySelector('#popupSave').onclick = async () => {
       const v = div.querySelector('#popupInput').value.trim();
       if (!v) { window.showToast('写点什么吧'); return; }
-      try { await add('diaries', { content: v, type, date: this.todayStr() }); } catch(e) { window.showToast('❌ 保存失败，请重试'); return; }
-      this.todayDone = (await getAll('diaries')).filter(d => d.date === this.todayStr()).length;
+      try {
+        await add('diaries', { content: v, type, date: this.todayStr(), createdAt: new Date().toISOString() });
+      } catch(e) { window.showToast('❌ 保存失败，请重试'); return; }
+      await this.loadData();
       close();
+      this.render();
       window.showToast(type === 'diary' ? '✅ 已记录' : '✅ 很棒！行动是治愈焦虑最好的药');
     };
+  }
+
+  showDiaryHistory() {
+    const all = [...this.diaries].sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.createdAt || '').localeCompare(a.createdAt || ''));
+    const groups = {};
+    all.forEach(d => {
+      const key = d.date || '未知日期';
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(d);
+    });
+
+    const div = document.createElement('div');
+    div.className = 'modal-overlay active';
+    div.innerHTML = `
+      <div class="modal" style="max-height: 80vh; display: flex; flex-direction: column;">
+        <div class="modal-header"><div class="modal-title">📋 记录历史</div><button class="modal-close">✕</button></div>
+        <div style="overflow-y: auto; flex: 1; padding: 0 var(--space-3) var(--space-3);">
+          ${all.length === 0 ? `
+            <div style="text-align: center; padding: var(--space-5) 0; color: var(--text-tertiary);">还没有记录<br>去写一条日记或完成一件事吧</div>
+          ` : Object.entries(groups).map(([date, items]) => `
+            <div style="margin-bottom: var(--space-3);">
+              <div style="font-size: var(--font-xs); color: var(--text-tertiary); margin: var(--space-2) 0 var(--space-1); font-weight: var(--weight-semibold);">${date}</div>
+              ${items.map(d => `
+                <div class="energy-diary-item" style="margin-bottom: 6px;">
+                  <span class="energy-diary-type">${d.type === 'diary' ? '📝' : '✅'}</span>
+                  <span class="energy-diary-content">${(d.content || '').replace(/</g, '&lt;')}</span>
+                  <span class="energy-diary-time">${this.formatTime(d.createdAt)}</span>
+                </div>
+              `).join('')}
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+    document.body.appendChild(div);
+    const close = () => div.remove();
+    div.querySelector('.modal-close').onclick = close;
+    div.addEventListener('click', e => { if (e.target === div) close(); });
   }
 
   showBeliefPopup() {
