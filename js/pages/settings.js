@@ -218,7 +218,8 @@ export default class SettingsPage {
               <br>
               Token 仅存储在本地 IndexedDB，不上传到任何服务器
             </div>
-            <input class="form-input" id="tokenInput" type="password" placeholder="ghp_xxxxxxxx" value="${currentToken}" style="width:100%; margin-bottom: var(--space-3);">
+            <input class="form-input" id="tokenInput" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off" placeholder="ghp_xxxxxxxx" value="${currentToken}" style="width:100%; margin-bottom: var(--space-2); font-family: monospace; font-size: var(--font-xs);">
+            <div id="tokenDebug" style="font-size: var(--font-xs); color: var(--text-tertiary); margin-bottom: var(--space-2); word-break: break-all;"></div>
             <button class="btn btn-primary btn-block" id="tokenSave">保存</button>
           </div>
         </div>
@@ -227,8 +228,26 @@ export default class SettingsPage {
       const close = () => { div.remove(); this._updateCloudStatus(); };
       document.getElementById('tokenClose').addEventListener('click', close);
       div.addEventListener('click', e => { if (e.target === div) close(); });
+
+      // 实时显示 Token 信息（前4位+后4位+长度）
+      const tokenInput = document.getElementById('tokenInput');
+      const tokenDebug = document.getElementById('tokenDebug');
+      const updateDebug = () => {
+        const v = tokenInput.value.trim();
+        if (!v) { tokenDebug.textContent = ''; return; }
+        const prefix = v.slice(0, 4);
+        const suffix = v.slice(-4);
+        tokenDebug.textContent = `长度: ${v.length} | 前缀: ${prefix}... | 后缀: ...${suffix} | 格式: ${v.startsWith('ghp_') ? 'Classic ✓' : v.startsWith('github_pat_') ? 'Fine-grained ⚠️' : '未知格式 ⚠️'}`;
+      };
+      tokenInput.addEventListener('input', updateDebug);
+      updateDebug();
+
       document.getElementById('tokenSave').addEventListener('click', async () => {
-        const val = document.getElementById('tokenInput').value.trim();
+        const val = tokenInput.value.trim();
+        if (val && !val.startsWith('ghp_') && !val.startsWith('github_pat_')) {
+          window.showToast('Token 格式异常，应以 ghp_ 开头', 4000);
+          return;
+        }
         await setSetting('github_token', val);
         // 同时存到 localStorage，清除 IndexedDB 后仍可恢复
         if (val) {
@@ -236,7 +255,7 @@ export default class SettingsPage {
         } else {
           localStorage.removeItem('shisi-github-token');
         }
-        window.showToast(val ? '✅ Token 已保存' : 'Token 已清除');
+        window.showToast(val ? `✅ Token 已保存（${val.length}字符）` : 'Token 已清除');
         close();
       });
     });
@@ -248,9 +267,9 @@ export default class SettingsPage {
       btn.disabled = true;
       try {
         const result = await validateGitHubToken();
-        window.showToast(result.message, 4000);
+        window.showToast(result.message, 5000);
       } catch (e) {
-        window.showToast('验证失败: ' + e.message, 4000);
+        window.showToast('验证异常: ' + e.message, 5000);
       }
       btn.textContent = '验证';
       btn.disabled = false;
