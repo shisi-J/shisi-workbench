@@ -912,6 +912,28 @@ export default class InspirationPage {
               outputType: 'idea',
               tags: tags,
             });
+          } else if (target === 'life-eat') {
+            // 美食探店：同步为「学做菜」记录
+            const videoPlatform = platform === 'bilibili' ? 'bilibili'
+              : platform === 'douyin' ? 'douyin'
+              : platform === 'xhs' ? 'xhs'
+              : 'none';
+            await add('lifeRecords', {
+              title: title || '未命名灵感',
+              fields: {
+                title: title || '未命名灵感',
+                recordType: 'cook',
+                url: url,
+                videoPlatform,
+                subType: '',
+                status: '想学',
+                rating: '',
+                city: '',
+                review: document.getElementById('inspSummary').value.trim(),
+                recipe: document.getElementById('inspSummary').value.trim(),
+              },
+              category: 'eat',
+            });
           } else if (target.startsWith('life-')) {
             const cat = target.replace('life-', '');
             const videoPlatform = platform === 'bilibili' ? 'bilibili'
