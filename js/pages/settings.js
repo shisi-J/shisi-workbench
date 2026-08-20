@@ -183,6 +183,13 @@ export default class SettingsPage {
             <span class="setting-label">数据存储</span>
             <span class="setting-value">本地 IndexedDB (AES加密)</span>
           </div>
+          <div class="setting-item" style="padding: 0; margin-top: var(--space-2);">
+            <div>
+              <div class="setting-label">强制更新</div>
+              <div class="setting-value" style="font-size: var(--font-xs);">清除所有缓存并重新加载最新版本</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="forceUpdateBtn">🔄 强制更新</button>
+          </div>
         </div>
 
         <div style="text-align: center; padding: var(--space-4); color: var(--text-tertiary); font-size: var(--font-sm);">
@@ -419,6 +426,34 @@ export default class SettingsPage {
       if (!key) { window.showToast('密钥不能为空'); return; }
       setEncryptionKey(key);
       window.showToast('✅ 密钥已保存');
+    });
+
+    // 强制更新：清除所有 SW 缓存并重新注册
+    document.getElementById('forceUpdateBtn')?.addEventListener('click', async () => {
+      const btn = document.getElementById('forceUpdateBtn');
+      btn.textContent = '⏳ 清理中...';
+      btn.disabled = true;
+      try {
+        // 注销所有 SW
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const reg of registrations) {
+          await reg.unregister();
+        }
+        // 清除所有缓存
+        const cacheKeys = await caches.keys();
+        for (const key of cacheKeys) {
+          await caches.delete(key);
+        }
+        window.showToast('✅ 缓存已清除，正在重新加载...', 2000);
+        // 硬刷新
+        setTimeout(() => {
+          window.location.href = window.location.origin + window.location.pathname + '?t=' + Date.now();
+        }, 1500);
+      } catch (e) {
+        window.showToast('清理失败: ' + e.message, 4000);
+        btn.textContent = '🔄 强制更新';
+        btn.disabled = false;
+      }
     });
   }
 

@@ -512,7 +512,8 @@ function registerSW() {
   if (!('serviceWorker' in navigator)) return;
 
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').then(registration => {
+    // 加 cache-busting 参数，确保浏览器不缓存旧 SW
+    navigator.serviceWorker.register('sw.js?v=1.9.23').then(registration => {
       let pendingUpdate = false;
 
       // 检测到新版本已下载
@@ -521,11 +522,20 @@ function registerSW() {
         if (!newWorker) return;
         newWorker.addEventListener('statechange', () => {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            // 新版本已下载，仅提示，不自动刷新
             pendingUpdate = true;
-            window.showToast('📲 发现新版本，下次打开自动生效', 3000);
+            window.showToast('📲 发现新版本，正在更新...', 2000);
+            // 通知新 SW 立即接管
+            newWorker.postMessage('SKIP_WAITING');
           }
         });
+      });
+
+      // 新 SW 接管后自动刷新（延迟 1 秒让 SW 完全激活）
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (pendingUpdate) {
+          window.showToast('✅ 已更新到最新版本', 2000);
+          setTimeout(() => location.reload(), 1500);
+        }
       });
 
       // 每 60 分钟检查一次更新
@@ -533,9 +543,6 @@ function registerSW() {
     }).catch(err => {
       console.log('SW 注册失败（不影响使用）:', err);
     });
-
-    // SW 控制权变化：不再自动刷新，避免丢数据
-    // 新版本会在下次打开 App 时自动生效
   });
 }
 
